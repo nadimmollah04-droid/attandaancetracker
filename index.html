@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AttendTrack</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{--navy:#0F172A;--navy-light:#1E293B;--teal:#0EA5E9;--teal-dark:#0284C7;--green:#10B981;--green-light:#D1FAE5;--amber:#F59E0B;--amber-light:#FEF3C7;--red:#EF4444;--red-light:#FEE2E2;--purple:#8B5CF6;--purple-light:#EDE9FE;--slate:#64748B;--slate-light:#F1F5F9;--white:#FFF;--border:#E2E8F0;--text:#0F172A}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--slate-light);color:var(--text);min-height:100vh}
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0F172A 0%,#1a365d 50%,#0c4a6e 100%);position:relative;overflow:hidden}
+#loginScreen::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:rgba(14,165,233,.08);top:-200px;right:-200px}
+.loginCard{background:#fff;border-radius:20px;padding:44px 38px;width:420px;box-shadow:0 25px 60px rgba(0,0,0,.3);position:relative;z-index:1;max-height:96vh;overflow-y:auto}
+.loginLogo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.loginLogo .icon{width:40px;height:40px;background:var(--teal);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.loginLogo h1{font-size:20px;font-weight:700;color:var(--navy)}
+.loginLogo span{font-size:11px;color:var(--slate);display:block}
+.loginTitle{font-size:24px;font-weight:700;margin-bottom:4px}
+.loginSubtitle{color:var(--slate);font-size:13px;margin-bottom:22px}
+.fg{margin-bottom:15px}
+.fg label{display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:#334155}
+.fg input{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;outline:none;transition:border-color .2s}
+.fg input:focus{border-color:var(--teal)}
+.loginBtn{width:100%;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;font-family:inherit}
+.loginBtn:hover{background:var(--teal-dark)}
+.loginErr{color:var(--red);font-size:12px;margin-top:8px;text-align:center;display:none}
+.demoCreds{margin-top:18px;padding:12px;background:var(--slate-light);border-radius:9px;font-size:11px;color:var(--slate)}
+.demoCreds strong{color:var(--navy);display:block;margin-bottom:5px}
+.demoCreds span{display:block;line-height:1.9}
+#app{display:none;height:100vh;overflow:hidden;flex-direction:row}
+.sidebar{width:232px;background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sbHead{padding:18px 16px 13px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sbLogo{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.sbLogo .icon{width:30px;height:30px;background:var(--teal);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.sbLogo span{font-size:15px;font-weight:700}
+.userBadge{background:var(--navy-light);border-radius:9px;padding:9px 10px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .15s}
+.userBadge:hover{background:#253347}
+.uAv{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
+.uInfo .uName{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.uInfo .uRole{font-size:10px;color:#94A3B8}
+.sbNav{padding:10px 9px;flex:1}
+.navSec{font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.08em;padding:0 7px;margin:11px 0 4px}
+.navBtn{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:500;color:#94A3B8;transition:all .15s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.navBtn:hover{background:var(--navy-light);color:#fff}
+.navBtn.active{background:var(--teal);color:#fff}
+.navBtn .ni{font-size:14px;width:17px;text-align:center;flex-shrink:0}
+.navBtn .nbadge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;min-width:16px;text-align:center}
+.sbFoot{padding:10px 9px;border-top:1px solid rgba(255,255,255,.08)}
+.logoutBtn{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:500;color:#94A3B8;transition:all .15s;border:none;background:none;width:100%;font-family:inherit}
+.logoutBtn:hover{background:rgba(239,68,68,.15);color:var(--red)}
+.mainArea{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0}
+.topBar{background:#fff;border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topBar h2{font-size:16px;font-weight:700}
+.topBar p{font-size:11px;color:var(--slate);margin-top:1px}
+.todayLbl{font-size:11px;color:var(--slate);background:var(--slate-light);padding:5px 10px;border-radius:7px}
+.content{padding:20px 24px;flex:1}
+.panel{display:none}
+.panel.active{display:block}
+.statsRow{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px}
+.statCard{background:#fff;border-radius:12px;padding:17px;border:1px solid var(--border)}
+.statCard .slbl{font-size:10.5px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.05em}
+.statCard .sval{font-size:28px;font-weight:700;margin:4px 0 2px}
+.statCard .ssub{font-size:10.5px;color:var(--slate)}
+.sc-green .sval{color:var(--green)}.sc-amber .sval{color:var(--amber)}.sc-red .sval{color:var(--red)}.sc-teal .sval{color:var(--teal)}.sc-purple .sval{color:var(--purple)}
+.calWrap{background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden}
+.calHead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.calHead h3{font-size:14px;font-weight:700}
+.calNavWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.calNav{display:flex;align-items:center;gap:8px}
+.calNav span{font-size:13px;font-weight:600;min-width:130px;text-align:center}
+.calNavBtn{width:28px;height:28px;border:1.5px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.calNavBtn:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+.calScroll{overflow-x:auto;max-height:calc(100vh - 300px)}
+.calTable{border-collapse:collapse;width:100%}
+.calTable th{padding:7px 5px;font-size:9.5px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.04em;background:var(--slate-light);border:1px solid var(--border);white-space:nowrap;text-align:center;min-width:46px;position:sticky;top:0;z-index:2}
+.calTable th:first-child{text-align:left;padding-left:10px;min-width:130px;z-index:3}
+.calTable td{border:1px solid var(--border);padding:2px 2px;vertical-align:middle;text-align:center;background:#fff;min-width:46px}
+.calTable td:first-child{text-align:left;padding:4px 7px;background:#FAFBFC;position:sticky;left:0;z-index:1;min-width:130px}
+.calTable td.wknd{background:#FAFBFC}
+.calTable tr:hover td{background:#F8FAFC}
+.calTable tr:hover td:first-child,.calTable tr:hover td.wknd{background:#F1F5F9}
+.dayHead{display:flex;flex-direction:column;align-items:center;gap:1px;padding:1px 0}
+.dayHead .dn{font-size:12px;font-weight:700;color:var(--text)}
+.dayHead .dw{font-size:8.5px;color:var(--slate)}
+.dayHead.istoday .dn{background:var(--teal);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.dayHead.wknd .dn{color:#94A3B8}
+.chip{font-size:8px;font-weight:700;padding:1px 3px;border-radius:3px;display:inline-block;margin:1px 0;cursor:default;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
+.cp{background:var(--amber-light);color:#92400E;border:1px solid #FCD34D}
+.ca{background:var(--green-light);color:#065F46;border:1px solid #6EE7B7}
+.cl{background:var(--red-light);color:#991B1B;border:1px solid #FCA5A5}
+.cw{background:var(--purple-light);color:#4C1D95;border:1px solid #C4B5FD}
+.cr{background:var(--slate-light);color:var(--slate);border:1px solid var(--border)}
+.calLegend{display:flex;gap:12px;align-items:center;padding:9px 18px;border-top:1px solid var(--border);background:#FAFBFC;flex-wrap:wrap}
+.calLegend span{font-size:10px;display:flex;align-items:center;gap:4px}
+.ldot{width:9px;height:9px;border-radius:2px}
+.formCard{background:#fff;border-radius:12px;border:1px solid var(--border);padding:20px;max-width:510px}
+.formCard h3{font-size:14px;font-weight:700;margin-bottom:14px}
+.fg2{margin-bottom:13px}
+.fg2 label{display:block;font-size:11.5px;font-weight:600;margin-bottom:3px;color:#334155}
+.fg2 input,.fg2 select,.fg2 textarea{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;outline:none;transition:border-color .2s;background:#fff;resize:vertical}
+.fg2 input:focus,.fg2 select:focus,.fg2 textarea:focus{border-color:var(--teal)}
+.tcols{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.subBtn{padding:9px 20px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
+.subBtn:hover{background:var(--teal-dark)}
+.dangerBtn{padding:9px 20px;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.dangerBtn:hover{background:#DC2626}
+.secBtn{padding:9px 20px;background:#fff;color:var(--navy);border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.secBtn:hover{border-color:var(--teal);color:var(--teal)}
+.sucMsg{background:var(--green-light);color:#065F46;padding:9px 13px;border-radius:8px;font-size:12px;font-weight:500;margin-top:10px;display:none}
+.errMsg{background:var(--red-light);color:#991B1B;padding:9px 13px;border-radius:8px;font-size:12px;font-weight:500;margin-top:10px;display:none}
+.warnBox{background:var(--amber-light);border:1px solid #FCD34D;border-radius:9px;padding:10px 13px;margin-bottom:13px;font-size:12px;color:#92400E}
+.tWrap{background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden}
+.tWrap table{width:100%;border-collapse:collapse;font-size:12px}
+.tWrap thead tr{background:var(--slate-light)}
+.tWrap th{padding:9px 13px;text-align:left;font-size:10px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.tWrap td{padding:10px 13px;border-top:1px solid var(--border);vertical-align:middle}
+.tWrap tr:hover td{background:#F8FAFC}
+.tHead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:7px}
+.tHead h3{font-size:14px;font-weight:700}
+.fsel{padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:11.5px;outline:none;background:#fff}
+.sBadge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;gap:3px;white-space:nowrap}
+.st-pending{background:var(--amber-light);color:#92400E}
+.st-approved{background:var(--green-light);color:#065F46}
+.st-rejected{background:var(--red-light);color:#991B1B}
+.st-lwp{background:var(--red-light);color:#991B1B}
+.actBtns{display:flex;gap:5px;flex-wrap:wrap}
+.appBtn,.rejBtn,.lwpBtn,.cancelBtn{padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:inherit;white-space:nowrap}
+.appBtn{background:var(--green);color:#fff}
+.rejBtn{background:var(--red);color:#fff}
+.lwpBtn{background:var(--amber);color:#fff}
+.cancelBtn{background:var(--slate-light);color:var(--slate)}
+.emptyState{text-align:center;padding:32px;color:var(--slate);font-size:13px}
+.emptyState .ei{font-size:30px;display:block;margin-bottom:7px}
+.teamGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:13px}
+.mCard{background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px}
+.mTop{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.mAvBig{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.mName{font-size:13px;font-weight:700}
+.mId{font-size:10px;color:var(--slate)}
+.roleBadge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9.5px;font-weight:700;margin-top:3px}
+.rb-emp{background:#DBEAFE;color:#1E40AF}
+.rb-l1{background:#FEF3C7;color:#92400E}
+.rb-l2{background:#D1FAE5;color:#065F46}
+.mStats{display:flex;gap:8px}
+.mStat .sv{font-size:16px;font-weight:700}
+.mStat .sl{font-size:9px;color:var(--slate)}
+.secHd{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.secHd h3{font-size:14px;font-weight:700}
+.addBtn{padding:6px 13px;background:var(--teal);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.tgLabel{font-size:10px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;padding-bottom:5px;border-bottom:2px solid var(--border)}
+.profCard{background:#fff;border-radius:12px;border:1px solid var(--border);padding:22px}
+.profAv{width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;color:#fff;margin-bottom:12px}
+.profName{font-size:18px;font-weight:700}
+.profRole{font-size:12px;color:var(--slate);margin-bottom:15px}
+.profGrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:16px}
+.profItem label{font-size:9.5px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.05em}
+.profItem .pv{font-size:12.5px;font-weight:600;margin-top:2px}
+.divider{border:none;border-top:1px solid var(--border);margin:15px 0}
+.modalOverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:1000;align-items:center;justify-content:center}
+.modalOverlay.active{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:450px;max-width:95vw;box-shadow:0 25px 60px rgba(0,0,0,.25);position:relative;max-height:90vh;overflow-y:auto}
+.modalClose{position:absolute;top:12px;right:12px;border:none;background:none;font-size:17px;cursor:pointer;color:var(--slate);padding:4px;border-radius:5px}
+.modalClose:hover{background:var(--slate-light)}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:14px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;padding:11px 16px;border-radius:10px;font-size:12.5px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;display:flex;align-items:center;gap:7px;max-width:310px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.warning{background:var(--amber);color:var(--navy)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="loginCard">
+    <div class="loginLogo">
+      <div class="icon">&#128203;</div>
+      <div><h1>AttendTrack</h1><span>Team Attendance Management</span></div>
+    </div>
+    <h2 class="loginTitle">Welcome back</h2>
+    <p class="loginSubtitle">Sign in to your workspace</p>
+    <div class="fg">
+      <label>Employee ID</label>
+      <input type="text" id="loginId" placeholder="e.g. EMP001" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter your password">
+    </div>
+    <button class="loginBtn" onclick="doLogin()">Sign In &#8594;</button>
+    <div class="loginErr" id="loginErr">Invalid Employee ID or password.</div>
+    <div class="demoCreds">
+      <strong>&#128272; Demo Accounts</strong>
+      <span><b>L2 Admin:</b> L2MGR001 / admin123</span>
+      <span><b>L1 Manager Alpha:</b> L1MGR001 / manager1</span>
+      <span><b>L1 Manager Beta:</b> L1MGR002 / manager2</span>
+      <span><b>Employees:</b> EMP001-EMP006 / emp123</span>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="sidebar">
+    <div class="sbHead">
+      <div class="sbLogo"><div class="icon">&#128203;</div><span>AttendTrack</span></div>
+      <div class="userBadge" onclick="switchPanel('profile')">
+        <div class="uAv" id="sbAv"></div>
+        <div class="uInfo"><div class="uName" id="sbName"></div><div class="uRole" id="sbRole"></div></div>
+      </div>
+    </div>
+    <div class="sbNav">
+      <div class="navSec">Overview</div>
+      <button class="navBtn active" data-panel="dashboard" onclick="switchPanel('dashboard')"><span class="ni">&#127968;</span> Dashboard</button>
+      <button class="navBtn" data-panel="calendar" onclick="switchPanel('calendar')"><span class="ni">&#128197;</span> Team Calendar</button>
+      <div class="navSec">My Actions</div>
+      <button class="navBtn" data-panel="applyLeave" onclick="switchPanel('applyLeave')"><span class="ni">&#9992;&#65039;</span> Apply Leave / WFH</button>
+      <button class="navBtn" data-panel="myRequests" onclick="switchPanel('myRequests')"><span class="ni">&#128196;</span> My Requests</button>
+      <button class="navBtn" data-panel="profile" onclick="switchPanel('profile')"><span class="ni">&#128100;</span> My Profile</button>
+      <div id="mgrNav" style="display:none">
+        <div class="navSec">Team</div>
+        <button class="navBtn" data-panel="approvals" onclick="switchPanel('approvals')">
+          <span class="ni">&#9989;</span> Approvals
+          <span class="nbadge" id="pendingBadge" style="display:none">0</span>
+        </button>
+        <button class="navBtn" data-panel="teamView" onclick="switchPanel('teamView')"><span class="ni">&#128101;</span> My Team</button>
+        <button class="navBtn" data-panel="lwpPanel" onclick="switchPanel('lwpPanel')"><span class="ni">&#128683;</span> Mark LWP</button>
+      </div>
+      <div id="l2Nav" style="display:none">
+        <div class="navSec">Administration</div>
+        <button class="navBtn" data-panel="allUsers" onclick="switchPanel('allUsers')"><span class="ni">&#127970;</span> All Employees</button>
+        <button class="navBtn" data-panel="allRequests" onclick="switchPanel('allRequests')"><span class="ni">&#128203;</span> All Requests</button>
+        <button class="navBtn" data-panel="reports" onclick="switchPanel('reports')"><span class="ni">&#128202;</span> Reports</button>
+      </div>
+    </div>
+    <div class="sbFoot">
+      <button class="logoutBtn" onclick="doLogout()"><span style="font-size:14px">&#128682;</span> Sign Out</button>
+    </div>
+  </div>
+
+  <div class="mainArea">
+    <div class="topBar">
+      <div><h2 id="panelTitle">Dashboard</h2><p id="panelSub"></p></div>
+      <div class="todayLbl" id="todayLbl"></div>
+    </div>
+    <div class="content">
+
+      <div class="panel active" id="panel-dashboard">
+        <div class="statsRow" id="statsRow"></div>
+        <div id="dashExtra"></div>
+      </div>
+
+      <div class="panel" id="panel-calendar">
+        <div class="calWrap">
+          <div class="calHead">
+            <h3>Team Attendance Calendar</h3>
+            <div class="calNavWrap">
+              <div class="calNav">
+                <button class="calNavBtn" onclick="changeMonth(-1)">&#8249;</button>
+                <span id="calMonthLbl"></span>
+                <button class="calNavBtn" onclick="changeMonth(1)">&#8250;</button>
+              </div>
+              <select class="fsel" id="calTeamFilter" onchange="renderCalendar()">
+                <option value="all">All Teams</option>
+              </select>
+            </div>
+          </div>
+          <div class="calScroll"><table class="calTable" id="calTable"></table></div>
+          <div class="calLegend">
+            <span><div class="ldot" style="background:#FCD34D"></div> Pending</span>
+            <span><div class="ldot" style="background:#6EE7B7"></div> Approved Leave</span>
+            <span><div class="ldot" style="background:#C4B5FD"></div> WFH</span>
+            <span><div class="ldot" style="background:#FCA5A5"></div> LWP</span>
+            <span><div class="ldot" style="background:#CBD5E1"></div> Rejected</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-applyLeave">
+        <div class="formCard">
+          <h3>&#9992;&#65039; Apply for Leave / WFH</h3>
+          <div class="fg2">
+            <label>Request Type</label>
+            <select id="leaveType">
+              <option value="CL">Casual Leave (CL)</option>
+              <option value="SL">Sick Leave (SL)</option>
+              <option value="EL">Earned Leave (EL)</option>
+              <option value="WFH">Work From Home (WFH)</option>
+            </select>
+          </div>
+          <div class="tcols">
+            <div class="fg2"><label>From Date</label><input type="date" id="leaveFrom" onchange="updateDays()"></div>
+            <div class="fg2"><label>To Date</label><input type="date" id="leaveTo" onchange="updateDays()"></div>
+          </div>
+          <div class="fg2">
+            <label>Session</label>
+            <select id="leaveSession">
+              <option value="full">Full Day</option>
+              <option value="first_half">First Half</option>
+              <option value="second_half">Second Half</option>
+            </select>
+          </div>
+          <div class="fg2">
+            <label>Reason *</label>
+            <textarea id="leaveReason" rows="3" placeholder="Brief reason..."></textarea>
+          </div>
+          <div id="dayCountInfo" style="font-size:11.5px;color:var(--slate);margin-bottom:11px"></div>
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+            <button class="subBtn" onclick="submitLeave()">Submit Request</button>
+            <span id="leaveChain" style="font-size:11px;color:var(--slate)"></span>
+          </div>
+          <div class="sucMsg" id="leaveSuc">&#9989; Leave request submitted!</div>
+          <div class="errMsg" id="leaveErr"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-myRequests">
+        <div class="tWrap">
+          <div class="tHead">
+            <h3>My Leave &amp; WFH Requests</h3>
+            <select class="fsel" onchange="renderMyRequests(this.value)">
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="lwp">LWP</option>
+            </select>
+          </div>
+          <table><thead><tr><th>Type</th><th>From</th><th>To</th><th>Session</th><th>Days</th><th>Reason</th><th>Status</th><th>Actioned By</th><th></th></tr></thead>
+          <tbody id="myReqBody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-approvals">
+        <div class="tWrap">
+          <div class="tHead">
+            <h3>Team Leave Approvals</h3>
+            <select class="fsel" id="appFilter" onchange="renderApprovals()">
+              <option value="pending">Pending Only</option>
+              <option value="all">All Requests</option>
+            </select>
+          </div>
+          <table><thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="approvalsBody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-teamView">
+        <div class="secHd"><h3>My Team Members</h3></div>
+        <div id="teamGrid"></div>
+      </div>
+
+      <div class="panel" id="panel-lwpPanel">
+        <div class="formCard">
+          <h3>&#128683; Mark Leave Without Permission</h3>
+          <div class="warnBox">&#9888;&#65039; Use only for uninformed absences. LWP marked by L1 Manager requires <b>L2 Admin approval</b> to finalize.</div>
+          <div class="fg2"><label>Select Employee</label><select id="lwpEmp"></select></div>
+          <div class="tcols">
+            <div class="fg2"><label>From Date</label><input type="date" id="lwpFrom"></div>
+            <div class="fg2"><label>To Date</label><input type="date" id="lwpTo"></div>
+          </div>
+          <div class="fg2"><label>Remarks</label><textarea id="lwpRemark" rows="2" placeholder="Reason for marking LWP..."></textarea></div>
+          <button class="dangerBtn" onclick="submitLWP()">Mark as LWP</button>
+          <div class="sucMsg" id="lwpSuc">&#128683; LWP marked successfully.</div>
+          <div class="errMsg" id="lwpErr"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-allUsers">
+        <div class="secHd">
+          <h3>All Employees</h3>
+          <button class="addBtn" onclick="openAddUserModal()">+ Add Employee</button>
+        </div>
+        <div id="allUsersWrap"></div>
+      </div>
+
+      <div class="panel" id="panel-allRequests">
+        <div class="tWrap">
+          <div class="tHead">
+            <h3>All Leave Requests</h3>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <select class="fsel" id="allReqTeam" onchange="renderAllRequests()"><option value="all">All Teams</option></select>
+              <select class="fsel" id="allReqStatus" onchange="renderAllRequests()">
+                <option value="all">All Status</option><option value="pending">Pending</option>
+                <option value="approved">Approved</option><option value="rejected">Rejected</option><option value="lwp">LWP</option>
+              </select>
+            </div>
+          </div>
+          <table><thead><tr><th>Employee</th><th>Team</th><th>L1 Manager</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="allReqBody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-reports">
+        <div class="statsRow" id="rptStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="rptCharts"></div>
+      </div>
+
+      <div class="panel" id="panel-profile">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:860px">
+          <div class="profCard" id="profileInfo"></div>
+          <div class="formCard">
+            <h3>&#128274; Change Password</h3>
+            <div class="fg2"><label>Current Password</label><input type="password" id="cpOld" placeholder="Current password"></div>
+            <div class="fg2"><label>New Password</label><input type="password" id="cpNew" placeholder="New password (min 6 chars)"></div>
+            <div class="fg2"><label>Confirm New Password</label><input type="password" id="cpConf" placeholder="Confirm new password"></div>
+            <button class="subBtn" onclick="changePassword()">Update Password</button>
+            <div class="sucMsg" id="cpSuc">&#9989; Password updated!</div>
+            <div class="errMsg" id="cpErr"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modalOverlay" id="addUserModal">
+  <div class="modal">
+    <button class="modalClose" onclick="closeModal('addUserModal')">&#10005;</button>
+    <h3>Add New Employee</h3>
+    <div class="fg2"><label>Full Name *</label><input type="text" id="nuName" placeholder="e.g. Ravi Kumar"></div>
+    <div class="tcols">
+      <div class="fg2"><label>Employee ID *</label><input type="text" id="nuId" placeholder="e.g. EMP010"></div>
+      <div class="fg2"><label>Password *</label><input type="text" id="nuPass" placeholder="Initial password"></div>
+    </div>
+    <div class="tcols">
+      <div class="fg2"><label>Role</label>
+        <select id="nuRole" onchange="toggleMgrField()">
+          <option value="employee">Employee</option>
+          <option value="l1manager">L1 Manager</option>
+        </select>
+      </div>
+      <div class="fg2" id="mgrFieldWrap">
+        <label>Reports To (L1 Manager)</label>
+        <select id="nuMgr"></select>
+      </div>
+    </div>
+    <div class="tcols">
+      <div class="fg2"><label>Department</label><input type="text" id="nuDept" placeholder="e.g. Engineering"></div>
+      <div class="fg2"><label>Team</label><input type="text" id="nuTeam" placeholder="e.g. Alpha"></div>
+    </div>
+    <button class="subBtn" onclick="addUser()">Create Employee</button>
+    <div class="sucMsg" id="nuSuc">&#9989; Employee created!</div>
+    <div class="errMsg" id="nuErr"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS=['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#EC4899','#14B8A6','#F97316','#6366F1'];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DSHORT=['Su','Mo','Tu','We','Th','Fr','Sa'];
+const TOTAL_LEAVES=18;
+
+let users=[
+  {id:'L2MGR001',name:'Lakshmi Narayanan',password:'admin123',role:'l2manager',dept:'Administration',team:'Admin',manager:null,color:'#0EA5E9'},
+  {id:'L1MGR001',name:'Arjun Sharma',password:'manager1',role:'l1manager',dept:'Engineering',team:'Alpha',manager:'L2MGR001',color:'#10B981'},
+  {id:'L1MGR002',name:'Priya Venkat',password:'manager2',role:'l1manager',dept:'Marketing',team:'Beta',manager:'L2MGR001',color:'#8B5CF6'},
+  {id:'EMP001',name:'Ravi Kumar',password:'emp123',role:'employee',dept:'Engineering',team:'Alpha',manager:'L1MGR001',color:'#3B82F6'},
+  {id:'EMP002',name:'Sunita Rao',password:'emp123',role:'employee',dept:'Engineering',team:'Alpha',manager:'L1MGR001',color:'#F59E0B'},
+  {id:'EMP003',name:'Karthik Iyer',password:'emp123',role:'employee',dept:'Engineering',team:'Alpha',manager:'L1MGR001',color:'#EF4444'},
+  {id:'EMP004',name:'Deepa Pillai',password:'emp123',role:'employee',dept:'Marketing',team:'Beta',manager:'L1MGR002',color:'#EC4899'},
+  {id:'EMP005',name:'Vijay Anand',password:'emp123',role:'employee',dept:'Marketing',team:'Beta',manager:'L1MGR002',color:'#14B8A6'},
+  {id:'EMP006',name:'Meera Krishnan',password:'emp123',role:'employee',dept:'Marketing',team:'Beta',manager:'L1MGR002',color:'#F97316'},
+];
+
+const now=new Date();
+const CY=now.getFullYear(),CM=now.getMonth()+1;
+const ds=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+let requests=[
+  {id:'REQ001',userId:'EMP001',type:'CL',from:ds(CY,CM,2),to:ds(CY,CM,2),session:'full',days:1,reason:'Personal work',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
+  {id:'REQ002',userId:'EMP002',type:'SL',from:ds(CY,CM,5),to:ds(CY,CM,6),session:'full',days:2,reason:'Fever',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
+  {id:'REQ003',userId:'EMP004',type:'WFH',from:ds(CY,CM,10),to:ds(CY,CM,11),session:'full',days:2,reason:'Home renovation',status:'pending',markedBy:null,approvedBy:null},
+  {id:'REQ004',userId:'EMP003',type:'EL',from:ds(CY,CM,16),to:ds(CY,CM,18),session:'full',days:3,reason:'Family function',status:'pending',markedBy:null,approvedBy:null},
+  {id:'REQ005',userId:'EMP005',type:'CL',from:ds(CY,CM,12),to:ds(CY,CM,12),session:'full',days:1,reason:'Urgent errand',status:'pending',markedBy:null,approvedBy:null},
+  {id:'REQ006',userId:'L1MGR001',type:'EL',from:ds(CY,CM,20),to:ds(CY,CM,21),session:'full',days:2,reason:'Vacation',status:'pending',markedBy:null,approvedBy:null},
+  {id:'REQ007',userId:'EMP006',type:'SL',from:ds(CY,CM,3),to:ds(CY,CM,3),session:'full',days:1,reason:'Stomach ache',status:'lwp',markedBy:'L1MGR002',approvedBy:null},
+  {id:'REQ008',userId:'EMP001',type:'WFH',from:ds(CY,CM,14),to:ds(CY,CM,14),session:'full',days:1,reason:'Client call',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
+  {id:'REQ009',userId:'EMP002',type:'CL',from:ds(CY,CM,22),to:ds(CY,CM,22),session:'full',days:1,reason:'Wedding',status:'rejected',markedBy:null,approvedBy:'L1MGR001'},
+];
+let rCtr=10;
+
+let currentUser=null;
+let calYear=now.getFullYear(),calMonth=now.getMonth();
+
+const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const todayStr=()=>new Date().toISOString().split('T')[0];
+const fmtDate=d=>new Date(d+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+const fmtShort=d=>new Date(d+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+const daysBetween=(a,b)=>Math.max(1,Math.round((new Date(b)-new Date(a))/86400000)+1);
+const roleLabel=r=>({l2manager:'L2 Manager (Admin)',l1manager:'L1 Manager',employee:'Employee'}[r]||r);
+const roleCls=r=>({l2manager:'rb-l2',l1manager:'rb-l1',employee:'rb-emp'}[r]||'rb-emp');
+const getUser=id=>users.find(u=>u.id===id);
+const genId=()=>'REQ'+String(rCtr++).padStart(3,'0');
+
+function statusBadge(s){
+  const m={pending:'&#9203; Pending',approved:'&#9989; Approved',rejected:'&#10060; Rejected',lwp:'&#128683; LWP'};
+  return `<span class="sBadge st-${s}">${m[s]||s}</span>`;
+}
+
+function getReportees(uid){
+  const u=getUser(uid);
+  if(!u) return [];
+  if(u.role==='l2manager') return users.filter(x=>x.role==='l1manager').map(x=>x.id);
+  if(u.role==='l1manager') return users.filter(x=>x.manager===uid).map(x=>x.id);
+  return [];
+}
+const getMgr=uid=>{const u=getUser(uid);return u?getUser(u.manager):null;};
+const getTeams=()=>[...new Set(users.map(u=>u.team).filter(Boolean))].filter(t=>t!=='Admin');
+
+function doLogin(){
+  const id=document.getElementById('loginId').value.trim().toUpperCase();
+  const pw=document.getElementById('loginPass').value;
+  const u=users.find(u=>u.id===id&&u.password===pw);
+  if(!u){document.getElementById('loginErr').style.display='block';return;}
+  document.getElementById('loginErr').style.display='none';
+  currentUser=u;
+  initApp();
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('loginScreen').style.display!=='none') doLogin();
+});
+function doLogout(){
+  currentUser=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  ['loginId','loginPass'].forEach(id=>document.getElementById(id).value='');
+}
+
+function initApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  const av=document.getElementById('sbAv');
+  av.textContent=ini(currentUser.name);
+  av.style.background=currentUser.color;
+  av.style.color='white';
+  document.getElementById('sbName').textContent=currentUser.name;
+  document.getElementById('sbRole').textContent=roleLabel(currentUser.role);
+  const isMgr=currentUser.role!=='employee';
+  const isL2=currentUser.role==='l2manager';
+  document.getElementById('mgrNav').style.display=isMgr?'block':'none';
+  document.getElementById('l2Nav').style.display=isL2?'block':'none';
+  document.getElementById('todayLbl').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  const t=todayStr();
+  ['leaveFrom','leaveTo','lwpFrom','lwpTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  const mgr=getMgr(currentUser.id);
+  document.getElementById('leaveChain').textContent=mgr?('Will go to: '+mgr.name+' for approval'):'';
+  const ctf=document.getElementById('calTeamFilter');
+  ctf.innerHTML='<option value="all">All Teams</option>'+getTeams().map(t=>`<option value="${t}">${t} Team</option>`).join('');
+  const arf=document.getElementById('allReqTeam');
+  if(arf)arf.innerHTML='<option value="all">All Teams</option>'+getTeams().map(t=>`<option value="${t}">${t} Team</option>`).join('');
+  updateDays();
+  switchPanel('dashboard');
+  updatePendingBadge();
+}
+
+const PMETA={
+  dashboard:{title:'Dashboard',sub:'Your attendance overview'},
+  calendar:{title:'Team Calendar',sub:'Full-month leave and WFH overview'},
+  applyLeave:{title:'Apply Leave / WFH',sub:'Submit a new request'},
+  myRequests:{title:'My Requests',sub:'Track status of all your requests'},
+  profile:{title:'My Profile',sub:'Account details and password settings'},
+  approvals:{title:'Team Approvals',sub:'Review leave requests from your team'},
+  teamView:{title:'My Team',sub:'Members under your supervision'},
+  lwpPanel:{title:'Mark LWP',sub:'Mark uninformed absence as Leave Without Permission'},
+  allUsers:{title:'All Employees',sub:'Manage all staff across teams'},
+  allRequests:{title:'All Leave Requests',sub:'Complete leave register'},
+  reports:{title:'Reports',sub:'Organisation-wide attendance analytics'},
+};
+
+function switchPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navBtn').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('panel-'+name);
+  if(!el)return;
+  el.classList.add('active');
+  document.querySelectorAll('.navBtn').forEach(b=>{if(b.dataset.panel===name)b.classList.add('active');});
+  const m=PMETA[name]||{};
+  document.getElementById('panelTitle').textContent=m.title||name;
+  document.getElementById('panelSub').textContent=m.sub||'';
+  if(name==='dashboard')renderDashboard();
+  if(name==='calendar')renderCalendar();
+  if(name==='myRequests')renderMyRequests('all');
+  if(name==='approvals')renderApprovals();
+  if(name==='teamView')renderTeamView();
+  if(name==='allUsers')renderAllUsers();
+  if(name==='lwpPanel')populateLwpDrop();
+  if(name==='allRequests')renderAllRequests();
+  if(name==='reports')renderReports();
+  if(name==='profile')renderProfile();
+}
+
+function renderDashboard(){
+  const myR=requests.filter(r=>r.userId===currentUser.id);
+  const approved=myR.filter(r=>r.status==='approved'&&r.type!=='WFH').reduce((s,r)=>s+r.days,0);
+  const wfh=myR.filter(r=>r.status==='approved'&&r.type==='WFH').reduce((s,r)=>s+r.days,0);
+  const pending=myR.filter(r=>r.status==='pending').length;
+  const lwp=myR.filter(r=>r.status==='lwp').reduce((s,r)=>s+r.days,0);
+  const balance=TOTAL_LEAVES-approved-lwp;
+  const teamPend=currentUser.role!=='employee'?requests.filter(r=>getReportees(currentUser.id).includes(r.userId)&&r.status==='pending').length:0;
+  document.getElementById('statsRow').innerHTML=`
+    <div class="statCard sc-teal"><div class="slbl">Leave Balance</div><div class="sval">${balance}</div><div class="ssub">of ${TOTAL_LEAVES} days</div></div>
+    <div class="statCard sc-green"><div class="slbl">Leaves Taken</div><div class="sval">${approved}</div><div class="ssub">approved days</div></div>
+    <div class="statCard sc-amber"><div class="slbl">Pending</div><div class="sval">${pending}</div><div class="ssub">awaiting approval</div></div>
+    <div class="statCard sc-${currentUser.role!=='employee'?'purple':'red'}">
+      <div class="slbl">${currentUser.role!=='employee'?'Team Pending':'LWP Days'}</div>
+      <div class="sval">${currentUser.role!=='employee'?teamPend:lwp}</div>
+      <div class="ssub">${currentUser.role!=='employee'?'awaiting your action':'uninformed absences'}</div>
+    </div>`;
+  let alert='';
+  if(currentUser.role!=='employee'&&teamPend>0){
+    alert=`<div style="background:var(--amber-light);border:1px solid #FCD34D;border-radius:10px;padding:11px 15px;margin-bottom:16px;font-size:12.5px;color:#92400E;display:flex;align-items:center;gap:9px">
+      <span style="font-size:17px">&#9203;</span>
+      <span>You have <b>${teamPend} pending leave request${teamPend>1?'s':''}</b> from your team. <a href="#" onclick="switchPanel('approvals')" style="color:#92400E;font-weight:700;text-decoration:none">Review now &#8594;</a></span>
+    </div>`;
+  }
+  const recent=[...myR].sort((a,b)=>b.from>a.from?1:-1).slice(0,6);
+  let rows='';
+  if(!recent.length)rows=`<tr><td colspan="6" class="emptyState"><span class="ei">&#128139;</span>No requests yet. <a href="#" onclick="switchPanel('applyLeave')" style="color:var(--teal)">Apply now &#8594;</a></td></tr>`;
+  else recent.forEach(r=>{
+    const mgr=getMgr(r.userId);
+    rows+=`<tr><td><b>${r.type}</b></td><td>${fmtShort(r.from)}${r.from!==r.to?' - '+fmtShort(r.to):''}</td><td>${r.days}</td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.reason}</td><td>${statusBadge(r.status)}</td><td style="font-size:10.5px;color:var(--slate)">${mgr?mgr.name:'--'}</td></tr>`;
+  });
+  document.getElementById('dashExtra').innerHTML=alert+`<div class="tWrap">
+    <div class="tHead"><h3>Recent Requests</h3><button class="addBtn" onclick="switchPanel('applyLeave')">+ New</button></div>
+    <table><thead><tr><th>Type</th><th>Date</th><th>Days</th><th>Reason</th><th>Status</th><th>Manager</th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+}
+
+function changeMonth(d){
+  calMonth+=d;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendar();
+}
+
+function renderCalendar(){
+  document.getElementById('calMonthLbl').textContent=MONTHS[calMonth]+' '+calYear;
+  const tf=document.getElementById('calTeamFilter').value;
+  const dim=new Date(calYear,calMonth+1,0).getDate();
+  const today=todayStr();
+  const days=[];
+  for(let d=1;d<=dim;d++){
+    const dt=new Date(calYear,calMonth,d);
+    days.push({d,date:ds(calYear,calMonth+1,d),dow:dt.getDay()});
+  }
+  let vis=[];
+  if(currentUser.role==='l2manager') vis=users.filter(u=>u.role!=='l2manager');
+  else if(currentUser.role==='l1manager') vis=users.filter(u=>u.manager===currentUser.id||u.id===currentUser.id);
+  else vis=[currentUser];
+  if(tf!=='all') vis=vis.filter(u=>u.team===tf);
+  const groups={};
+  vis.forEach(u=>{const t=u.team||'Other';if(!groups[t])groups[t]=[];groups[t].push(u);});
+  let html='<thead><tr><th style="text-align:left;padding-left:9px">EMPLOYEE</th>';
+  days.forEach(({d,date,dow})=>{
+    const it=date===today,iw=dow===0||dow===6;
+    html+=`<th style="${iw?'opacity:.55':''}${it?';background:#E0F2FE !important;color:var(--teal-dark)':''}">
+      <div class="dayHead ${it?'istoday':''} ${iw?'wknd':''}">
+        <div class="dn">${d}</div><div class="dw">${DSHORT[dow]}</div>
+      </div></th>`;
+  });
+  html+='</tr></thead><tbody>';
+  Object.entries(groups).forEach(([team,members])=>{
+    if(Object.keys(groups).length>1){
+      html+=`<tr><td colspan="${dim+1}" style="padding:7px 9px;background:var(--slate-light);font-size:9.5px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--border)">${team} Team</td></tr>`;
+    }
+    members.forEach(u=>{
+      html+='<tr><td style="min-width:130px"><div style="display:flex;align-items:center;gap:5px">';
+      html+=`<div style="width:20px;height:20px;border-radius:50%;background:${u.color};color:white;font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${ini(u.name)}</div>`;
+      html+=`<div><div style="font-size:11px;font-weight:600">${u.name.split(' ')[0]} ${u.name.split(' ').slice(-1)[0]}</div><div style="font-size:9px;color:var(--slate)">${u.id}</div></div></div></td>`;
+      days.forEach(({date,dow})=>{
+        const iw=dow===0||dow===6;
+        const dr=requests.filter(r=>r.userId===u.id&&r.from<=date&&r.to>=date&&r.status!=='rejected');
+        let cell='';
+        dr.forEach(r=>{
+          const cls=r.status==='approved'?(r.type==='WFH'?'cw':'ca'):r.status==='lwp'?'cl':'cp';
+          cell+=`<span class="chip ${cls}" title="${u.name}: ${r.type} (${r.status})">${r.type}</span>`;
+        });
+        html+=`<td class="${iw?'wknd':''}">${cell}</td>`;
+      });
+      html+='</tr>';
+    });
+  });
+  html+='</tbody>';
+  document.getElementById('calTable').innerHTML=html;
+}
+
+function updateDays(){
+  const f=document.getElementById('leaveFrom').value,t=document.getElementById('leaveTo').value;
+  const el=document.getElementById('dayCountInfo');
+  if(f&&t&&f<=t){const d=daysBetween(f,t);el.textContent='&#128197; '+d+' day'+(d>1?'s':'')+' selected';}
+  else el.textContent='';
+}
+
+function submitLeave(){
+  const type=document.getElementById('leaveType').value;
+  const from=document.getElementById('leaveFrom').value;
+  const to=document.getElementById('leaveTo').value;
+  const session=document.getElementById('leaveSession').value;
+  const reason=document.getElementById('leaveReason').value.trim();
+  const eEl=document.getElementById('leaveErr'),sEl=document.getElementById('leaveSuc');
+  eEl.style.display='none';sEl.style.display='none';
+  if(!from||!to){eEl.textContent='Please select dates.';eEl.style.display='block';return;}
+  if(from>to){eEl.textContent='End date must be on or after start date.';eEl.style.display='block';return;}
+  if(!reason){eEl.textContent='Please enter a reason.';eEl.style.display='block';return;}
+  const mgr=getMgr(currentUser.id);
+  if(!mgr&&currentUser.role!=='l2manager'){eEl.textContent='No manager assigned. Contact HR.';eEl.style.display='block';return;}
+  requests.push({id:genId(),userId:currentUser.id,type,from,to,session,days:daysBetween(from,to),reason,status:'pending',markedBy:null,approvedBy:null});
+  sEl.style.display='block';
+  document.getElementById('leaveReason').value='';
+  updatePendingBadge();
+  showToast('Request submitted to '+(mgr?mgr.name:'admin'),'success');
+  setTimeout(()=>sEl.style.display='none',4000);
+}
+
+function renderMyRequests(filter){
+  let data=requests.filter(r=>r.userId===currentUser.id);
+  if(filter&&filter!=='all')data=data.filter(r=>r.status===filter);
+  data.sort((a,b)=>b.from>a.from?1:-1);
+  const tb=document.getElementById('myReqBody');
+  if(!data.length){tb.innerHTML=`<tr><td colspan="9" class="emptyState"><span class="ei">&#128139;</span>No requests found.</td></tr>`;return;}
+  tb.innerHTML=data.map(r=>{
+    const ab=r.approvedBy?(getUser(r.approvedBy)?.name||r.approvedBy):r.markedBy?('LWP by '+(getUser(r.markedBy)?.name||r.markedBy)):'--';
+    const cc=r.status==='pending';
+    return`<tr><td><b>${r.type}</b></td><td>${fmtDate(r.from)}</td><td>${fmtDate(r.to)}</td>
+      <td style="font-size:10.5px;color:var(--slate)">${r.session.replace('_',' ')}</td>
+      <td>${r.days}</td><td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason}">${r.reason}</td>
+      <td>${statusBadge(r.status)}</td><td style="font-size:10.5px;color:var(--slate)">${ab}</td>
+      <td>${cc?`<button class="cancelBtn" onclick="cancelReq('${r.id}')">Cancel</button>`:'--'}</td></tr>`;
+  }).join('');
+}
+
+function cancelReq(rid){
+  if(!confirm('Cancel this leave request?'))return;
+  const r=requests.find(r=>r.id===rid);
+  if(r&&r.status==='pending'){r.status='rejected';r.approvedBy=currentUser.id;}
+  renderMyRequests('all');updatePendingBadge();showToast('Request cancelled.','warning');
+}
+
+function renderApprovals(){
+  const filter=document.getElementById('appFilter').value;
+  const reps=getReportees(currentUser.id);
+  let data=requests.filter(r=>reps.includes(r.userId));
+  if(filter==='pending')data=data.filter(r=>r.status==='pending');
+  data.sort((a,b)=>a.status==='pending'?-1:1);
+  const tb=document.getElementById('approvalsBody');
+  if(!data.length){tb.innerHTML=`<tr><td colspan="8" class="emptyState"><span class="ei">&#127881;</span>No requests to show.</td></tr>`;return;}
+  tb.innerHTML=data.map(r=>{
+    const u=getUser(r.userId);
+    const ca=r.status==='pending';
+    const isLwp=r.type==='LWP';
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <div style="width:24px;height:24px;border-radius:50%;background:${u?.color||'#888'};color:white;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${ini(u?.name||r.userId)}</div>
+        <div><div style="font-weight:600;font-size:12px">${u?.name||r.userId}</div><div style="font-size:9.5px;color:var(--slate)">${r.userId}</div></div>
+      </div></td>
+      <td><b>${r.type}</b>${isLwp&&r.markedBy?` <span style="font-size:9px;color:var(--slate);background:var(--slate-light);padding:1px 5px;border-radius:20px">by ${getUser(r.markedBy)?.name||r.markedBy}</span>`:''}</td>
+      <td>${fmtDate(r.from)}</td><td>${fmtDate(r.to)}</td><td>${r.days}</td>
+      <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason}">${r.reason}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>${ca?`<div class="actBtns"><button class="appBtn" onclick="actReq('${r.id}','approved')">&#10003; Approve</button><button class="rejBtn" onclick="actReq('${r.id}','rejected')">&#10005; Reject</button></div>`:'--'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function actReq(rid,action){
+  const r=requests.find(r=>r.id===rid);
+  if(!r)return;
+  r.status=action;r.approvedBy=currentUser.id;
+  updatePendingBadge();renderApprovals();
+  showToast('Request '+action+'!',action==='approved'?'success':'error');
+}
+
+function renderTeamView(){
+  const reps=getReportees(currentUser.id).map(id=>getUser(id)).filter(Boolean);
+  const g=document.getElementById('teamGrid');
+  if(!reps.length){g.innerHTML=`<div style="color:var(--slate);padding:18px">No team members assigned.</div>`;return;}
+  g.innerHTML=`<div class="teamGrid">${reps.map(u=>memberCard(u)).join('')}</div>`;
+}
+
+function memberCard(u){
+  const taken=requests.filter(r=>r.userId===u.id&&r.status==='approved'&&r.type!=='WFH').reduce((s,r)=>s+r.days,0);
+  const wfhD=requests.filter(r=>r.userId===u.id&&r.status==='approved'&&r.type==='WFH').reduce((s,r)=>s+r.days,0);
+  const pend=requests.filter(r=>r.userId===u.id&&r.status==='pending').length;
+  const lwp=requests.filter(r=>r.userId===u.id&&r.status==='lwp').reduce((s,r)=>s+r.days,0);
+  const mgr=getUser(u.manager);
+  return`<div class="mCard">
+    <div class="mTop">
+      <div class="mAvBig" style="background:${u.color};color:white">${ini(u.name)}</div>
+      <div><div class="mName">${u.name}</div><div class="mId">${u.id} &middot; ${u.dept}</div>
+        <span class="roleBadge ${roleCls(u.role)}">${roleLabel(u.role)}</span>
+      </div>
+    </div>
+    ${mgr?`<div style="font-size:10.5px;color:var(--slate);margin-bottom:9px">Reports to: <b>${mgr.name}</b></div>`:''}
+    <div class="mStats">
+      <div class="mStat"><div class="sv" style="color:var(--green)">${taken}</div><div class="sl">Taken</div></div>
+      <div class="mStat"><div class="sv" style="color:var(--purple)">${wfhD}</div><div class="sl">WFH</div></div>
+      <div class="mStat"><div class="sv" style="color:var(--amber)">${pend}</div><div class="sl">Pending</div></div>
+      <div class="mStat"><div class="sv" style="color:var(--teal)">${TOTAL_LEAVES-taken-lwp}</div><div class="sl">Balance</div></div>
+      <div class="mStat"><div class="sv" style="color:var(--red)">${lwp}</div><div class="sl">LWP</div></div>
+    </div>
+  </div>`;
+}
+
+function renderAllUsers(){
+  const w=document.getElementById('allUsersWrap');
+  const teams=getTeams();
+  let html='';
+  teams.forEach(team=>{
+    const members=users.filter(u=>u.team===team);
+    const mgr=members.find(u=>u.role==='l1manager');
+    html+=`<div class="tgLabel">&#127991;&#65039; Team ${team}${mgr?' &mdash; L1: '+mgr.name:''}</div>`;
+    html+=`<div class="teamGrid" style="margin-bottom:18px">${members.map(u=>memberCard(u)).join('')}</div>`;
+  });
+  const l2s=users.filter(u=>u.role==='l2manager');
+  html+=`<div class="tgLabel">&#127760; Administration</div><div class="teamGrid">${l2s.map(u=>memberCard(u)).join('')}</div>`;
+  w.innerHTML=html;
+}
+
+function openAddUserModal(){
+  const sel=document.getElementById('nuMgr');
+  sel.innerHTML='<option value="">-- None (is L1 Manager) --</option>'+
+    users.filter(u=>u.role==='l1manager').map(u=>`<option value="${u.id}">${u.name} (${u.team})</option>`).join('');
+  ['nuSuc','nuErr'].forEach(id=>document.getElementById(id).style.display='none');
+  ['nuName','nuId','nuPass','nuDept','nuTeam'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nuRole').value='employee';
+  toggleMgrField();
+  openModal('addUserModal');
+}
+
+function toggleMgrField(){
+  document.getElementById('mgrFieldWrap').style.display=
+    document.getElementById('nuRole').value==='l1manager'?'none':'block';
+}
+
+function addUser(){
+  const name=document.getElementById('nuName').value.trim();
+  const id=document.getElementById('nuId').value.trim().toUpperCase();
+  const pass=document.getElementById('nuPass').value.trim();
+  const role=document.getElementById('nuRole').value;
+  const mgr=document.getElementById('nuMgr').value;
+  const dept=document.getElementById('nuDept').value.trim();
+  const team=document.getElementById('nuTeam').value.trim();
+  const eEl=document.getElementById('nuErr');eEl.style.display='none';
+  if(!name||!id||!pass){eEl.textContent='Name, ID and Password required.';eEl.style.display='block';return;}
+  if(users.find(u=>u.id===id)){eEl.textContent='Employee ID already exists.';eEl.style.display='block';return;}
+  const mgrU=mgr?getUser(mgr):null;
+  users.push({id,name,password:pass,role,dept:dept||'General',team:team||(mgrU?.team||'General'),
+    manager:role==='l1manager'?'L2MGR001':(mgr||'L2MGR001'),color:COLORS[Math.floor(Math.random()*COLORS.length)]});
+  document.getElementById('nuSuc').style.display='block';
+  showToast(name+' added!','success');
+  setTimeout(()=>{closeModal('addUserModal');renderAllUsers();},1200);
+}
+
+function populateLwpDrop(){
+  const sel=document.getElementById('lwpEmp');
+  const pool=currentUser.role==='l2manager'
+    ?users.filter(u=>u.role!=='l2manager')
+    :users.filter(u=>u.manager===currentUser.id);
+  sel.innerHTML=pool.map(u=>`<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
+}
+
+function submitLWP(){
+  const uid=document.getElementById('lwpEmp').value;
+  const from=document.getElementById('lwpFrom').value;
+  const to=document.getElementById('lwpTo').value;
+  const remark=document.getElementById('lwpRemark').value.trim();
+  const eEl=document.getElementById('lwpErr'),sEl=document.getElementById('lwpSuc');
+  eEl.style.display='none';sEl.style.display='none';
+  if(!uid||!from||!to){eEl.textContent='Please fill all fields.';eEl.style.display='block';return;}
+  if(from>to){eEl.textContent='Invalid date range.';eEl.style.display='block';return;}
+  const autoApproved=currentUser.role==='l2manager';
+  requests.push({id:genId(),userId:uid,type:'LWP',from,to,session:'full',days:daysBetween(from,to),
+    reason:remark||'Uninformed absence',status:'lwp',
+    markedBy:currentUser.id,approvedBy:autoApproved?currentUser.id:null});
+  sEl.style.display='block';
+  document.getElementById('lwpRemark').value='';
+  updatePendingBadge();
+  showToast('LWP marked for '+(getUser(uid)?.name||uid),'warning');
+}
+
+function renderAllRequests(){
+  const tf=document.getElementById('allReqTeam').value;
+  const sf=document.getElementById('allReqStatus').value;
+  let data=[...requests];
+  if(tf!=='all'){const ids=users.filter(u=>u.team===tf).map(u=>u.id);data=data.filter(r=>ids.includes(r.userId));}
+  if(sf!=='all')data=data.filter(r=>r.status===sf);
+  data.sort((a,b)=>{if(a.status==='pending'&&b.status!=='pending')return -1;if(b.status==='pending'&&a.status!=='pending')return 1;return b.from>a.from?1:-1;});
+  const tb=document.getElementById('allReqBody');
+  if(!data.length){tb.innerHTML=`<tr><td colspan="9" class="emptyState"><span class="ei">&#128139;</span>No requests found.</td></tr>`;return;}
+  tb.innerHTML=data.map(r=>{
+    const u=getUser(r.userId);const mgr=getUser(u?.manager);
+    const ca=r.status==='pending';
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <div style="width:22px;height:22px;border-radius:50%;background:${u?.color||'#888'};color:white;font-size:8.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${ini(u?.name||r.userId)}</div>
+        <span style="font-weight:600;font-size:11.5px">${u?.name||r.userId}</span>
+      </div></td>
+      <td style="font-size:10.5px;color:var(--slate)">${u?.team||'--'}</td>
+      <td style="font-size:10.5px;color:var(--slate)">${mgr?.name||'--'}</td>
+      <td><b>${r.type}</b></td>
+      <td>${fmtDate(r.from)}</td><td>${fmtDate(r.to)}</td><td>${r.days}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>${ca?`<div class="actBtns"><button class="appBtn" onclick="actReqL2('${r.id}','approved')">&#10003;</button><button class="rejBtn" onclick="actReqL2('${r.id}','rejected')">&#10005;</button></div>`:'--'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function actReqL2(rid,action){
+  const r=requests.find(r=>r.id===rid);
+  if(!r)return;r.status=action;r.approvedBy=currentUser.id;
+  updatePendingBadge();renderAllRequests();
+  showToast('Request '+action+'!',action==='approved'?'success':'error');
+}
+
+function renderReports(){
+  const empCount=users.filter(u=>u.role!=='l2manager').length;
+  const approved=requests.filter(r=>r.status==='approved').length;
+  const pending=requests.filter(r=>r.status==='pending').length;
+  const lwp=requests.filter(r=>r.status==='lwp').length;
+  document.getElementById('rptStats').innerHTML=`
+    <div class="statCard sc-teal"><div class="slbl">Total Employees</div><div class="sval">${empCount}</div><div class="ssub">across all teams</div></div>
+    <div class="statCard sc-green"><div class="slbl">Approved Requests</div><div class="sval">${approved}</div><div class="ssub">this year</div></div>
+    <div class="statCard sc-amber"><div class="slbl">Pending Approvals</div><div class="sval">${pending}</div><div class="ssub">needs action</div></div>
+    <div class="statCard sc-red"><div class="slbl">LWP Instances</div><div class="sval">${lwp}</div><div class="ssub">uninformed absences</div></div>`;
+  const teams=getTeams();
+  let tRows=teams.map(t=>{
+    const ids=users.filter(u=>u.team===t).map(u=>u.id);
+    const ta=requests.filter(r=>ids.includes(r.userId)&&r.status==='approved'&&r.type!=='WFH').reduce((s,r)=>s+r.days,0);
+    const tw=requests.filter(r=>ids.includes(r.userId)&&r.status==='approved'&&r.type==='WFH').reduce((s,r)=>s+r.days,0);
+    const tp=requests.filter(r=>ids.includes(r.userId)&&r.status==='pending').length;
+    const tl=requests.filter(r=>ids.includes(r.userId)&&r.status==='lwp').reduce((s,r)=>s+r.days,0);
+    return`<tr><td style="font-weight:600">${t}</td><td>${ids.length}</td><td style="color:var(--green);font-weight:600">${ta}</td><td style="color:var(--purple);font-weight:600">${tw}</td><td style="color:var(--amber);font-weight:600">${tp}</td><td style="color:var(--red);font-weight:600">${tl}</td></tr>`;
+  }).join('');
+  const topTakers=users.filter(u=>u.role==='employee').map(u=>{
+    const d=requests.filter(r=>r.userId===u.id&&r.status==='approved'&&r.type!=='WFH').reduce((s,r)=>s+r.days,0);
+    return{u,d};
+  }).sort((a,b)=>b.d-a.d).slice(0,5);
+  document.getElementById('rptCharts').innerHTML=`
+    <div class="tWrap">
+      <div class="tHead"><h3>Team-wise Summary</h3></div>
+      <table><thead><tr><th>Team</th><th>Members</th><th>Leave Days</th><th>WFH Days</th><th>Pending</th><th>LWP</th></tr></thead>
+      <tbody>${tRows}</tbody></table>
+    </div>
+    <div class="tWrap">
+      <div class="tHead"><h3>Top Leave Takers</h3></div>
+      <table><thead><tr><th>Employee</th><th>Team</th><th>Days Used</th><th>Balance</th></tr></thead>
+      <tbody>${topTakers.map(({u,d})=>`<tr>
+        <td><div style="display:flex;align-items:center;gap:6px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${u.color};color:white;font-size:8.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${ini(u.name)}</div>
+          <span style="font-weight:600;font-size:11.5px">${u.name}</span>
+        </div></td>
+        <td style="font-size:10.5px;color:var(--slate)">${u.team}</td>
+        <td style="color:var(--green);font-weight:700">${d}</td>
+        <td style="color:var(--teal);font-weight:700">${TOTAL_LEAVES-d}</td>
+      </tr>`).join('')}</tbody></table>
+    </div>`;
+}
+
+function renderProfile(){
+  const u=currentUser;
+  const mgr=getUser(u.manager);
+  const reps=getReportees(u.id).map(id=>getUser(id)).filter(Boolean);
+  const myR=requests.filter(r=>r.userId===u.id);
+  const taken=myR.filter(r=>r.status==='approved'&&r.type!=='WFH').reduce((s,r)=>s+r.days,0);
+  const lwp=myR.filter(r=>r.status==='lwp').reduce((s,r)=>s+r.days,0);
+  const wfhD=myR.filter(r=>r.status==='approved'&&r.type==='WFH').reduce((s,r)=>s+r.days,0);
+  document.getElementById('profileInfo').innerHTML=`
+    <div class="profAv" style="background:${u.color}">${ini(u.name)}</div>
+    <div class="profName">${u.name}</div>
+    <div class="profRole">${roleLabel(u.role)} &bull; ${u.dept}</div>
+    <div class="profGrid">
+      <div class="profItem"><label>Employee ID</label><div class="pv">${u.id}</div></div>
+      <div class="profItem"><label>Team</label><div class="pv">${u.team||'--'}</div></div>
+      <div class="profItem"><label>Department</label><div class="pv">${u.dept}</div></div>
+      <div class="profItem"><label>Manager</label><div class="pv">${mgr?mgr.name:'--'}</div></div>
+    </div>
+    <hr class="divider">
+    <div class="profGrid">
+      <div class="profItem"><label>Leave Balance</label><div class="pv" style="color:var(--teal)">${TOTAL_LEAVES-taken-lwp} days</div></div>
+      <div class="profItem"><label>Leaves Taken</label><div class="pv" style="color:var(--green)">${taken} days</div></div>
+      <div class="profItem"><label>WFH Days</label><div class="pv" style="color:var(--purple)">${wfhD} days</div></div>
+      <div class="profItem"><label>LWP Days</label><div class="pv" style="color:var(--red)">${lwp} days</div></div>
+    </div>
+    ${reps.length?`<hr class="divider"><div style="font-size:10px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Direct Reports (${reps.length})</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">${reps.map(r=>`
+      <div style="display:flex;align-items:center;gap:5px;background:var(--slate-light);border-radius:6px;padding:3px 8px">
+        <div style="width:18px;height:18px;border-radius:50%;background:${r.color};color:white;font-size:7.5px;font-weight:700;display:flex;align-items:center;justify-content:center">${ini(r.name)}</div>
+        <span style="font-size:10.5px;font-weight:600">${r.name.split(' ')[0]}</span>
+      </div>`).join('')}</div>`:''}`;
+}
+
+function changePassword(){
+  const old=document.getElementById('cpOld').value;
+  const nw=document.getElementById('cpNew').value;
+  const conf=document.getElementById('cpConf').value;
+  const eEl=document.getElementById('cpErr'),sEl=document.getElementById('cpSuc');
+  eEl.style.display='none';sEl.style.display='none';
+  if(!old||!nw||!conf){eEl.textContent='Please fill all fields.';eEl.style.display='block';return;}
+  if(currentUser.password!==old){eEl.textContent='Current password is incorrect.';eEl.style.display='block';return;}
+  if(nw.length<6){eEl.textContent='New password must be at least 6 characters.';eEl.style.display='block';return;}
+  if(nw!==conf){eEl.textContent='Passwords do not match.';eEl.style.display='block';return;}
+  const u=users.find(u=>u.id===currentUser.id);
+  if(u){u.password=nw;currentUser.password=nw;}
+  sEl.style.display='block';
+  ['cpOld','cpNew','cpConf'].forEach(id=>document.getElementById(id).value='');
+  showToast('Password updated!','success');
+}
+
+function updatePendingBadge(){
+  const reps=getReportees(currentUser.id);
+  const cnt=requests.filter(r=>reps.includes(r.userId)&&r.status==='pending').length;
+  const b=document.getElementById('pendingBadge');
+  if(b){b.textContent=cnt;b.style.display=cnt>0?'inline-block':'none';}
+}
+
+function openModal(id){document.getElementById(id).classList.add('active');}
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+document.querySelectorAll('.modalOverlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active');});
+});
+
+let toastTmr;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.innerHTML=msg;t.className='toast show '+type;
+  clearTimeout(toastTmr);
+  toastTmr=setTimeout(()=>t.classList.remove('show'),3200);
+}
+</script>
+</body>
+</html>
