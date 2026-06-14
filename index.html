@@ -383,7 +383,6 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
       <span><div class="ldot" style="background:#6EE7B7"></div>Approved Planned</span>
       <span><div class="ldot" style="background:#93C5FD"></div>Approved Unplanned</span>
       <span><div class="ldot" style="background:#F9A8D4"></div>WFH</span>
-      <span><div class="ldot" style="background:#C4B5FD"></div>Comp Off</span>
       <span><div class="ldot" style="background:#FCD34D"></div>Pending</span>
       <span><div class="ldot" style="background:#FCA5A5"></div>LWP</span>
       <span><div class="ldot" style="background:#E2E8F0"></div>Rejected</span>
@@ -397,10 +396,8 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
      <div class="formCard">
       <h3>&#9992;&#65039; Apply for Leave / WFH</h3>
       <div class="fg2"><label>Leave Type</label>
-       <select id="leaveType">
-        <option value="PL">Planned Leave (PL)</option>
-        <option value="CL">Casual Leave (CL)</option>
-        <option value="CO">Comp Off</option>
+       <select id="leaveType" onchange="updateDays()">
+        <option value="PL">Planned Leave</option>
         <option value="WFH">Work From Home (WFH)</option>
        </select>
       </div>
@@ -408,12 +405,15 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
        <div class="fg2"><label>From Date</label><input type="date" id="leaveFrom" onchange="updateDays()"></div>
        <div class="fg2"><label>To Date</label><input type="date" id="leaveTo" onchange="updateDays()"></div>
       </div>
-      <div class="fg2"><label>Session</label>
+      <div class="fg2"><label>Half Day?</label>
        <select id="leaveSession">
         <option value="full">Full Day</option>
         <option value="first_half">First Half</option>
         <option value="second_half">Second Half</option>
        </select>
+      </div>
+      <div class="warnBox" style="font-size:11.5px;margin-bottom:10px;background:#EDE9FE;border-color:#C4B5FD;color:#4C1D95">
+       &#128338; <b>7-day rule:</b> If your leave starts within 7 days from today, it is automatically marked as <b>Unplanned Leave</b>. Apply at least 7 days in advance to qualify as Planned Leave.
       </div>
       <div class="fg2"><label>Reason *</label>
        <textarea id="leaveReason" rows="3" placeholder="Brief reason..."></textarea>
@@ -458,7 +458,7 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
        <option value="lwp">LWP</option>
       </select>
      </div>
-     <div style="overflow-x:auto"><table><thead><tr><th>Type</th><th>Planned?</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>By</th><th></th></tr></thead>
+     <div style="overflow-x:auto"><table><thead><tr><th>Type</th><th>Plan Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>By</th><th></th></tr></thead>
      <tbody id="myReqBody"></tbody></table></div>
     </div>
    </div>
@@ -472,7 +472,7 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
        <option value="all">All</option>
       </select>
      </div>
-     <div style="overflow-x:auto"><table><thead><tr><th>Employee</th><th>Type</th><th>Planned?</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+     <div style="overflow-x:auto"><table><thead><tr><th>Employee</th><th>Type</th><th>Plan Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
      <tbody id="approvalsBody"></tbody></table></div>
     </div>
    </div>
@@ -521,7 +521,7 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
        </select>
       </div>
      </div>
-     <div style="overflow-x:auto"><table><thead><tr><th>Employee</th><th>Team</th><th>Manager</th><th>Type</th><th>Planned?</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Action</th></tr></thead>
+     <div style="overflow-x:auto"><table><thead><tr><th>Employee</th><th>Team</th><th>Manager</th><th>Type</th><th>Plan Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Action</th></tr></thead>
      <tbody id="allReqBody"></tbody></table></div>
     </div>
    </div>
@@ -697,14 +697,14 @@ const dstr=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0
 function defaultReqs(){
  return[
   {id:'REQ001',userId:'EMP001',type:'PL',planned:true,from:dstr(CY,CM,2),to:dstr(CY,CM,2),session:'full',days:1,reason:'Personal work',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
-  {id:'REQ002',userId:'EMP002',type:'CL',planned:false,from:dstr(CY,CM,5),to:dstr(CY,CM,6),session:'full',days:2,reason:'Fever',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
+  {id:'REQ002',userId:'EMP002',type:'PL',planned:false,from:dstr(CY,CM,5),to:dstr(CY,CM,6),session:'full',days:2,reason:'Fever',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
   {id:'REQ003',userId:'EMP004',type:'WFH',planned:true,from:dstr(CY,CM,10),to:dstr(CY,CM,11),session:'full',days:2,reason:'Home renovation',status:'pending',markedBy:null,approvedBy:null},
   {id:'REQ004',userId:'EMP003',type:'PL',planned:true,from:dstr(CY,CM,16),to:dstr(CY,CM,18),session:'full',days:3,reason:'Family function',status:'pending',markedBy:null,approvedBy:null},
-  {id:'REQ005',userId:'EMP005',type:'CL',planned:false,from:dstr(CY,CM,12),to:dstr(CY,CM,12),session:'full',days:1,reason:'Urgent errand',status:'pending',markedBy:null,approvedBy:null},
+  {id:'REQ005',userId:'EMP005',type:'PL',planned:false,from:dstr(CY,CM,12),to:dstr(CY,CM,12),session:'full',days:1,reason:'Urgent errand',status:'pending',markedBy:null,approvedBy:null},
   {id:'REQ006',userId:'L1MGR001',type:'PL',planned:true,from:dstr(CY,CM,20),to:dstr(CY,CM,21),session:'full',days:2,reason:'Vacation',status:'pending',markedBy:null,approvedBy:null},
-  {id:'REQ007',userId:'EMP006',type:'CL',planned:false,from:dstr(CY,CM,3),to:dstr(CY,CM,3),session:'full',days:1,reason:'Stomach ache',status:'lwp',markedBy:'L1MGR002',approvedBy:null},
+  {id:'REQ007',userId:'EMP006',type:'PL',planned:false,from:dstr(CY,CM,3),to:dstr(CY,CM,3),session:'full',days:1,reason:'Stomach ache',status:'lwp',markedBy:'L1MGR002',approvedBy:null},
   {id:'REQ008',userId:'EMP001',type:'WFH',planned:true,from:dstr(CY,CM,14),to:dstr(CY,CM,14),session:'full',days:1,reason:'Client call',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
-  {id:'REQ009',userId:'EMP002',type:'CO',planned:false,from:dstr(CY,CM,22),to:dstr(CY,CM,22),session:'full',days:1,reason:'Comp off for weekend work',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
+  {id:'REQ009',userId:'EMP002',type:'PL',planned:false,from:dstr(CY,CM,22),to:dstr(CY,CM,22),session:'full',days:1,reason:'Comp off for weekend work',status:'approved',markedBy:null,approvedBy:'L1MGR001'},
  ];
 }
 
@@ -888,7 +888,7 @@ function chipClass(r){
  if(r.status==='pending')return'chip-p';
  // approved:
  if(r.type==='WFH')return'chip-wfh';
- if(r.type==='CO')return'chip-co';
+ // Planned Leave: green=planned, blue=unplanned
  return r.planned?'chip-ap':'chip-au';
 }
 
@@ -1097,10 +1097,25 @@ function renderApplyCalendar(){
 
 // ═══════════ APPLY LEAVE ═══════════
 function updateDays(){
- const f=document.getElementById('leaveFrom')?.value,t=document.getElementById('leaveTo')?.value;
+ const f=document.getElementById('leaveFrom')?.value;
+ const t=document.getElementById('leaveTo')?.value;
+ const type=document.getElementById('leaveType')?.value;
  const el=document.getElementById('dayCountInfo');if(!el)return;
- if(f&&t&&f<=t){const d=daysBetween(f,t);el.textContent='&#128197; '+d+' day'+(d>1?'s':'')+' selected';}
- else el.textContent='';
+ if(f&&t&&f<=t){
+  const d=daysBetween(f,t);
+  let hint='&#128197; '+d+' day'+(d>1?'s':'')+' selected';
+  if(type==='PL'){
+   const today=new Date();today.setHours(0,0,0,0);
+   const fromDate=new Date(f+'T00:00');
+   const diff=Math.round((fromDate-today)/86400000);
+   if(diff<7){
+    hint+=' &nbsp;&#9888;&#65039; <span style="color:var(--amber);font-weight:600">Less than 7 days notice — will be marked as Unplanned Leave</span>';
+   } else {
+    hint+=' &nbsp;&#9989; <span style="color:var(--green);font-weight:600">Qualifies as Planned Leave ('+diff+' days notice)</span>';
+   }
+  }
+  el.innerHTML=hint;
+ } else el.innerHTML='';
 }
 
 function submitLeave(){
@@ -1109,7 +1124,6 @@ function submitLeave(){
  const to=document.getElementById('leaveTo').value;
  const session=document.getElementById('leaveSession').value;
  const reason=document.getElementById('leaveReason').value.trim();
- const planned=type==='PL'; // PL = planned, everything else = unplanned
  const eEl=document.getElementById('leaveErr'),sEl=document.getElementById('leaveSuc');
  eEl.style.display='none';sEl.style.display='none';
  if(!from||!to){eEl.textContent='Please select dates.';eEl.style.display='block';return;}
@@ -1117,14 +1131,32 @@ function submitLeave(){
  if(!reason){eEl.textContent='Please enter a reason.';eEl.style.display='block';return;}
  const mgr=getMgr(currentUser.id);
  if(!mgr&&currentUser.role!=='l2manager'){eEl.textContent='No manager assigned. Contact HR.';eEl.style.display='block';return;}
- requests.push({id:genId(),userId:currentUser.id,type,planned,from,to,session,days:daysBetween(from,to),reason,status:'pending',markedBy:null,approvedBy:null});
+
+ // Auto-detect planned vs unplanned: if leave starts within 7 days → unplanned
+ let planned = (type==='PL');
+ let autoDowngraded = false;
+ if(type==='PL'){
+  const today=new Date();today.setHours(0,0,0,0);
+  const fromDate=new Date(from+'T00:00');
+  const diffDays=Math.round((fromDate-today)/86400000);
+  if(diffDays<7){planned=false;autoDowngraded=true;}
+ }
+
+ requests.push({id:genId(),userId:currentUser.id,type,planned,from,to,session,
+  days:daysBetween(from,to),reason,status:'pending',markedBy:null,approvedBy:null});
  saveData();
+
+ if(autoDowngraded){
+  sEl.innerHTML='&#9989; Request submitted — automatically marked as <b>Unplanned Leave</b> (less than 7 days notice).';
+ } else {
+  sEl.innerHTML='&#9989; Request submitted as <b>'+(type==='WFH'?'WFH':(planned?'Planned Leave':'Unplanned Leave'))+'</b>.';
+ }
  sEl.style.display='block';
  document.getElementById('leaveReason').value='';
  updatePendingBadge();
  renderApplyCalendar();
- showToast('Request submitted to '+(mgr?mgr.name:'admin'),'success');
- setTimeout(()=>sEl.style.display='none',3500);
+ showToast(autoDowngraded?'Auto-marked Unplanned (< 7 days)':'Request submitted!',(autoDowngraded?'warning':'success'));
+ setTimeout(()=>sEl.style.display='none',5000);
 }
 
 // ═══════════ MY REQUESTS ═══════════
@@ -1138,7 +1170,7 @@ function renderMyRequests(filter){
   const ab=r.approvedBy?(getUser(r.approvedBy)?.name||r.approvedBy):r.markedBy?('LWP by '+(getUser(r.markedBy)?.name||r.markedBy)):'--';
   return`<tr>
    <td><b>${r.type}</b></td>
-   <td><span style="font-size:10px;background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};padding:1px 6px;border-radius:20px;font-weight:700">${r.planned?'Planned':'Unplanned'}</span></td>
+   <td><span style="font-size:10px;background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};padding:1px 6px;border-radius:20px;font-weight:700">${r.type==='WFH'?'WFH':(r.planned?'&#9989; Planned':'&#9888; Unplanned')}</span></td>
    <td>${fmtDate(r.from)}</td><td>${fmtDate(r.to)}</td><td>${r.days}</td>
    <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason}">${r.reason}</td>
    <td>${statusBadge(r.status)}</td>
@@ -1172,14 +1204,19 @@ function renderApprovals(){
     <div><div style="font-weight:600;font-size:12px">${u?.name||r.userId}</div><div style="font-size:9.5px;color:var(--slate)">${r.userId}</div></div>
    </div></td>
    <td><b>${r.type}</b>${r.type==='LWP'&&r.markedBy?` <span style="font-size:9px;color:var(--slate);background:var(--sl);padding:1px 5px;border-radius:20px">by ${getUser(r.markedBy)?.name||r.markedBy}</span>`:''}</td>
-   <td><span style="font-size:10px;background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};padding:1px 6px;border-radius:20px;font-weight:700">${r.planned?'Planned':'Unplanned'}</span></td>
+   <td><span style="font-size:10px;background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};padding:1px 6px;border-radius:20px;font-weight:700">${r.type==='WFH'?'WFH':(r.planned?'&#9989; Planned':'&#9888; Unplanned')}</span></td>
    <td>${fmtDate(r.from)}</td><td>${fmtDate(r.to)}</td><td>${r.days}</td>
    <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.reason}</td>
    <td>${statusBadge(r.status)}</td>
-   <td>${r.status==='pending'?`<div class="actBtns">
-    <button class="appBtn" onclick="actReq('${r.id}','approved')">&#10003;</button>
-    <button class="rejBtn" onclick="actReq('${r.id}','rejected')">&#10005;</button>
-   </div>`:'--'}</td>
+   <td><div class="actBtns" style="flex-direction:column;align-items:flex-start;gap:5px">
+    ${r.type!=='WFH'?`<button onclick="togglePlanned('${r.id}')" style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};width:100%;text-align:left" title="Click to toggle">
+      ${r.planned?'&#9989; Planned':'&#128203; Unplanned'} <span style="font-size:9px;opacity:.7">(click to change)</span>
+    </button>`:''}
+    ${r.status==='pending'?`<div style="display:flex;gap:4px">
+     <button class="appBtn" onclick="actReq('${r.id}','approved')">&#10003; Approve</button>
+     <button class="rejBtn" onclick="actReq('${r.id}','rejected')">&#10005;</button>
+    </div>`:'--'}
+   </div></td>
   </tr>`;
  }).join('');
 }
@@ -1190,6 +1227,24 @@ function actReq(rid,action){
  saveData();updatePendingBadge();renderApprovals();
  showToast('Request '+action+'!',action==='approved'?'success':'error');
 }
+function togglePlanned(rid){
+ const r=requests.find(r=>r.id===rid);
+ if(!r)return;
+ if(r.type==='WFH'){showToast('WFH cannot be changed to planned/unplanned.','warning');return;}
+ r.planned=!r.planned;
+ saveData();
+ // Refresh whichever panel is active
+ const active=document.querySelector('.panel.active');
+ if(active){
+  const pid=active.id.replace('panel-','');
+  if(pid==='approvals')renderApprovals();
+  if(pid==='allRequests')renderAllRequests();
+  if(pid==='myRequests')renderMyRequests('all');
+ }
+ showToast('Marked as '+(r.planned?'Planned':'Unplanned')+' leave.', r.planned?'success':'warning');
+}
+
+
 
 // ═══════════ TEAM VIEW ═══════════
 function renderTeamView(){
@@ -1424,10 +1479,18 @@ function renderAllRequests(){
    <td style="font-size:10.5px;color:var(--slate)">${u?.team||'--'}</td>
    <td style="font-size:10.5px;color:var(--slate)">${mgr?.name||'--'}</td>
    <td><b>${r.type}</b></td>
-   <td><span style="font-size:9.5px;background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};padding:1px 5px;border-radius:20px;font-weight:700">${r.planned?'P':'U'}</span></td>
+   <td><span style="font-size:9.5px;background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};padding:1px 5px;border-radius:20px;font-weight:700">${r.type==='WFH'?'WFH':(r.planned?'Plan':'Unplan')}</span></td>
    <td>${fmtDate(r.from)}</td><td>${fmtDate(r.to)}</td><td>${r.days}</td>
    <td>${statusBadge(r.status)}</td>
-   <td>${r.status==='pending'?`<div class="actBtns"><button class="appBtn" onclick="actReqL2('${r.id}','approved')">&#10003;</button><button class="rejBtn" onclick="actReqL2('${r.id}','rejected')">&#10005;</button></div>`:'--'}</td>
+   <td><div class="actBtns" style="flex-direction:column;align-items:flex-start;gap:5px">
+    ${r.type!=='WFH'?`<button onclick="togglePlanned('${r.id}')" style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};width:100%;text-align:left">
+      ${r.planned?'&#9989; Planned':'&#128203; Unplanned'} <span style='font-size:9px;opacity:.7'>(click to change)</span>
+     </button>`:''}
+    ${r.status==='pending'?`<div style="display:flex;gap:4px">
+     <button class="appBtn" onclick="actReqL2('${r.id}','approved')">&#10003; Approve</button>
+     <button class="rejBtn" onclick="actReqL2('${r.id}','rejected')">&#10005;</button>
+    </div>`:'--'}
+   </div></td>
   </tr>`;
  }).join('');
 }
@@ -1497,7 +1560,7 @@ function previewReport(){
   const rd=new Date(r.from);return rd.getFullYear()===y&&rd.getMonth()+1===m;
  });
  let html=`<div class="tWrap"><div class="tHead"><h3>&#128203; ${u.name} &mdash; ${MONTHS[m-1]} ${y}</h3></div>
-  <div style="overflow-x:auto"><table><thead><tr><th>Request ID</th><th>Type</th><th>Planned?</th><th>From</th><th>To</th><th>Days</th><th>Session</th><th>Reason</th><th>Status</th><th>Actioned By</th></tr></thead><tbody>`;
+  <div style="overflow-x:auto"><table><thead><tr><th>Request ID</th><th>Type</th><th>Plan Type</th><th>From</th><th>To</th><th>Days</th><th>Session</th><th>Reason</th><th>Status</th><th>Actioned By</th></tr></thead><tbody>`;
  if(!data.length)html+=`<tr><td colspan="10" class="emptyState"><span class="ei">&#128139;</span>No records for this period.</td></tr>`;
  else{
   data.forEach(r=>{
