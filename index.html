@@ -577,6 +577,7 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
     <select id="nuRole" onchange="toggleMgrField()">
      <option value="employee">Employee</option>
      <option value="l1manager">L1 Manager</option>
+     <option value="l2manager">L2 Manager (Admin)</option>
     </select>
    </div>
    <div class="fg2" id="mgrFieldWrap">
@@ -590,6 +591,43 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
   <button class="subBtn" onclick="addUser()">Create Employee</button>
   <div class="sucMsg" id="nuSuc">&#9989; Created!</div>
   <div class="errMsg" id="nuErr"></div>
+ </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modalOverlay" id="editUserModal">
+ <div class="modal">
+  <button class="modalClose" onclick="closeModal('editUserModal')">&#10005;</button>
+  <h3>&#9998; Edit Employee</h3>
+  <input type="hidden" id="euId">
+  <div class="fg2"><label>Full Name</label><input type="text" id="euName" placeholder="Full name"></div>
+  <div class="tcols">
+   <div class="fg2"><label>Employee ID</label><input type="text" id="euIdDisplay" disabled style="background:var(--sl);color:var(--slate)"></div>
+   <div class="fg2"><label>New Password <span style="font-size:10px;color:var(--slate)">(leave blank to keep)</span></label><input type="text" id="euPass" placeholder="New password"></div>
+  </div>
+  <div class="tcols">
+   <div class="fg2"><label>Role</label>
+    <select id="euRole" onchange="toggleEditMgrField()">
+     <option value="employee">Employee</option>
+     <option value="l1manager">L1 Manager</option>
+     <option value="l2manager">L2 Manager (Admin)</option>
+    </select>
+   </div>
+   <div class="fg2" id="euMgrWrap">
+    <label>Reports To (L1 Manager)</label>
+    <select id="euMgr"></select>
+   </div>
+  </div>
+  <div class="tcols">
+   <div class="fg2"><label>Department</label><input type="text" id="euDept" placeholder="Department"></div>
+   <div class="fg2"><label>Team</label><input type="text" id="euTeam" placeholder="Team name"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+   <button class="subBtn" onclick="saveEditUser()">Save Changes</button>
+   <button class="secBtn" onclick="closeModal('editUserModal')">Cancel</button>
+  </div>
+  <div class="sucMsg" id="euSuc">&#9989; Changes saved!</div>
+  <div class="errMsg" id="euErr"></div>
  </div>
 </div>
 
@@ -1211,7 +1249,10 @@ function memberCardAdmin(u){
    <div style="flex:1;min-width:0"><div class="mName">${u.name}</div><div class="mId">${u.id} &middot; ${u.dept}</div>
     <span class="roleBadge ${roleCls(u.role)}">${roleLabel(u.role)}</span>
    </div>
-   ${!isSelf?`<button class="delBtn" style="padding:3px 8px;font-size:10px;align-self:flex-start;flex-shrink:0" onclick="promptDelete('${u.id}')">&#128465;</button>`:''}
+   ${!isSelf?`<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+   <button class="appBtn" style="padding:3px 8px;font-size:10px;background:#E6F1FB;color:#185FA5" onclick="openEditUserModal('${u.id}')">&#9998;</button>
+   <button class="delBtn" style="padding:3px 8px;font-size:10px" onclick="promptDelete('${u.id}')">&#128465;</button>
+  </div>`:''}
   </div>
   <div class="mStats">
    <div class="mStat"><div class="sv" style="color:var(--green)">${taken}</div><div class="sl">Taken</div></div>
@@ -1220,6 +1261,66 @@ function memberCardAdmin(u){
    <div class="mStat"><div class="sv" style="color:var(--red)">${lwp}</div><div class="sl">LWP</div></div>
   </div>
  </div>`;
+}
+
+function openEditUserModal(uid){
+ const u=getUser(uid);if(!u)return;
+ document.getElementById('euId').value=u.id;
+ document.getElementById('euIdDisplay').value=u.id;
+ document.getElementById('euName').value=u.name;
+ document.getElementById('euPass').value='';
+ document.getElementById('euRole').value=u.role;
+ document.getElementById('euDept').value=u.dept||'';
+ document.getElementById('euTeam').value=u.team||'';
+ // Populate manager dropdown
+ const sel=document.getElementById('euMgr');
+ sel.innerHTML='<option value="">-- None --</option>'+
+  users.filter(x=>x.role==='l1manager'&&x.id!==uid).map(x=>`<option value="${x.id}"${u.manager===x.id?' selected':''}>${x.name} (${x.team})</option>`).join('');
+ toggleEditMgrField();
+ ['euSuc','euErr'].forEach(id=>document.getElementById(id).style.display='none');
+ openModal('editUserModal');
+}
+
+function toggleEditMgrField(){
+ const role=document.getElementById('euRole').value;
+ document.getElementById('euMgrWrap').style.display=(role==='l1manager'||role==='l2manager')?'none':'block';
+}
+
+function saveEditUser(){
+ const uid=document.getElementById('euId').value;
+ const name=document.getElementById('euName').value.trim();
+ const pass=document.getElementById('euPass').value.trim();
+ const role=document.getElementById('euRole').value;
+ const mgr=document.getElementById('euMgr').value;
+ const dept=document.getElementById('euDept').value.trim();
+ const team=document.getElementById('euTeam').value.trim();
+ const eEl=document.getElementById('euErr'),sEl=document.getElementById('euSuc');
+ eEl.style.display='none';sEl.style.display='none';
+ if(!name){eEl.textContent='Name is required.';eEl.style.display='block';return;}
+ const u=users.find(x=>x.id===uid);if(!u)return;
+ u.name=name;
+ if(pass.length>0){
+  if(pass.length<6){eEl.textContent='Password must be at least 6 characters.';eEl.style.display='block';return;}
+  u.password=pass;
+  // If editing self, update currentUser too
+  if(uid===currentUser.id)currentUser.password=pass;
+ }
+ u.role=role;
+ u.dept=dept||u.dept;
+ u.team=team||(role==='l2manager'?'Admin':u.team);
+ u.manager=role==='l2manager'?null:(role==='l1manager'?'L2MGR001':(mgr||u.manager));
+ // If editing self name, update sidebar
+ if(uid===currentUser.id){
+  currentUser.name=name;currentUser.role=role;
+  document.getElementById('sbName').textContent=name;
+  document.getElementById('sbRole').textContent=roleLabel(role);
+  const av=document.getElementById('sbAv');
+  if(av)av.textContent=ini(name);
+ }
+ saveData();
+ sEl.style.display='block';
+ setTimeout(()=>{closeModal('editUserModal');renderAllUsers();},1000);
+ showToast(name+' updated!','success');
 }
 
 function promptDelete(uid){
@@ -1255,7 +1356,9 @@ function openAddUserModal(){
  openModal('addUserModal');
 }
 function toggleMgrField(){
- document.getElementById('mgrFieldWrap').style.display=document.getElementById('nuRole').value==='l1manager'?'none':'block';
+ const role=document.getElementById('nuRole').value;
+ // L1 and L2 managers don't report to an L1 manager
+ document.getElementById('mgrFieldWrap').style.display=(role==='l1manager'||role==='l2manager')?'none':'block';
 }
 function addUser(){
  const name=document.getElementById('nuName').value.trim();
@@ -1270,8 +1373,8 @@ function addUser(){
  if(users.find(u=>u.id===id)){eEl.textContent='ID already exists.';eEl.style.display='block';return;}
  const mgrU=mgr?getUser(mgr):null;
  users.push({id,name,password:pass,role,dept:dept||'General',
-  team:team||(mgrU?.team||'General'),
-  manager:role==='l1manager'?'L2MGR001':(mgr||'L2MGR001'),
+  team:team||(mgrU?.team||(role==='l2manager'?'Admin':'General')),
+  manager:role==='l2manager'?null:(role==='l1manager'?'L2MGR001':(mgr||'L2MGR001')),
   color:COLORS[Math.floor(Math.random()*COLORS.length)]});
  saveData();
  document.getElementById('nuSuc').style.display='block';
