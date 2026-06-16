@@ -327,6 +327,7 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
    <button class="navBtn" data-panel="applyLeave" onclick="sp('applyLeave')"><span class="ni">&#9992;&#65039;</span>Apply Leave / WFH</button>
    <button class="navBtn" data-panel="myRequests" onclick="sp('myRequests')"><span class="ni">&#128196;</span>My Requests</button>
    <button class="navBtn" data-panel="profile" onclick="sp('profile')"><span class="ni">&#128100;</span>My Profile</button>
+   <button class="navBtn" data-panel="leaveLog" onclick="sp('leaveLog')"><span class="ni">&#128196;</span>Leave History</button>
    <div id="mgrNav" style="display:none">
     <div class="navSec">Team</div>
     <button class="navBtn" data-panel="approvals" onclick="sp('approvals')">
@@ -562,6 +563,41 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
  </div>
 </div>
 
+
+      <!-- LEAVE HISTORY LOG -->
+      <div class="panel" id="panel-leaveLog">
+        <div class="tWrap">
+          <div class="tHead">
+            <h3>&#128196; Leave Activity Log</h3>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <select class="fsel" id="logStatusFilter" onchange="renderLeaveLog()">
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="cancellation_requested">Cancellation Pending</option>
+                <option value="withdrawn">Withdrawn</option>
+                <option value="lwp">LWP</option>
+              </select>
+              <select class="fsel" id="logUserFilter" onchange="renderLeaveLog()">
+                <option value="mine">My Requests</option>
+              </select>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr>
+                <th>Req ID</th><th>Employee</th><th>Type</th><th>From</th><th>To</th>
+                <th>Days</th><th>Status</th><th>Remarks</th><th>Last Action</th><th>Log</th>
+              </tr></thead>
+              <tbody id="leaveLogBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
 <!-- ADD USER MODAL -->
 <div class="modalOverlay" id="addUserModal">
  <div class="modal">
@@ -583,6 +619,7 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
    <div class="fg2" id="mgrFieldWrap">
     <label>Reports To (L1)</label><select id="nuMgr"></select>
    </div>
+   <div id="mgrHint" style="display:none;font-size:11px;color:var(--slate);background:var(--sl);padding:6px 10px;border-radius:7px;margin-top:-6px"></div>
   </div>
   <div class="tcols">
    <div class="fg2"><label>Department</label><input type="text" id="nuDept" placeholder="Engineering"></div>
@@ -631,6 +668,24 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
  </div>
 </div>
 
+<!-- REMARKS MODAL (Rejection / Cancellation) -->
+<div class="modalOverlay" id="remarksModal">
+ <div class="modal">
+  <button class="modalClose" onclick="closeModal('remarksModal')">&#10005;</button>
+  <h3 id="remarksModalTitle">Add Remarks</h3>
+  <p id="remarksModalDesc" style="font-size:12.5px;color:var(--slate);margin-bottom:12px"></p>
+  <div class="fg2">
+   <label id="remarksLabel">Remarks <span style="color:var(--red)">*</span></label>
+   <textarea id="remarksText" rows="3" placeholder="Enter remarks (mandatory)..." style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;outline:none;resize:vertical"></textarea>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+   <button id="remarksConfirmBtn" class="dangerBtn" onclick="processRemarks()">Confirm</button>
+   <button class="secBtn" onclick="closeModal('remarksModal')">Cancel</button>
+  </div>
+  <div class="errMsg" id="remarksErr"></div>
+ </div>
+</div>
+
 <!-- DELETE CONFIRM MODAL -->
 <div class="modalOverlay" id="deleteModal">
  <div class="modal">
@@ -640,6 +695,16 @@ body{font-family:'Inter',sans-serif;background:var(--sl);color:var(--text);min-h
    <button class="dangerBtn" onclick="confirmDelete()">Yes, Delete</button>
    <button class="secBtn" onclick="closeModal('deleteModal')">Cancel</button>
   </div>
+ </div>
+</div>
+
+
+<!-- LOGS MODAL -->
+<div class="modalOverlay" id="logsModal">
+ <div class="modal" style="max-width:520px">
+  <button class="modalClose" onclick="closeModal('logsModal')">&#10005;</button>
+  <h3 id="logsModalTitle" style="margin-bottom:14px">Leave History</h3>
+  <div id="logsModalBody"></div>
  </div>
 </div>
 
@@ -877,8 +942,18 @@ function getReportees(uid){
 }
 
 function statusBadge(s){
- const m={pending:'&#9203; Pending',approved:'&#9989; Approved',rejected:'&#10060; Rejected',lwp:'&#128683; LWP'};
- return`<span class="sBadge st-${s}">${m[s]||s}</span>`;
+ const m={
+  pending:'&#9203; Pending',
+  approved:'&#9989; Approved',
+  rejected:'&#10060; Rejected',
+  lwp:'&#128683; LWP',
+  cancelled:'&#10060; Cancelled',
+  cancellation_requested:'&#9997; Cancel Pending',
+  withdrawn:'&#8617; Withdrawn',
+ };
+ const cls={pending:'st-pending',approved:'st-approved',rejected:'st-rejected',
+  lwp:'st-lwp',cancelled:'st-rejected',cancellation_requested:'st-pending',withdrawn:'st-rejected'};
+ return`<span class="sBadge ${cls[s]||'st-pending'}">${m[s]||s}</span>`;
 }
 
 // chip class based on type + status + planned flag
@@ -941,8 +1016,9 @@ function initApp(){
  document.getElementById('todayLbl').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
  const t=todayStr();
  ['leaveFrom','leaveTo','lwpFrom','lwpTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
- const mgr=getMgr(currentUser.id);
- document.getElementById('leaveChain').textContent=mgr?'→ Goes to: '+mgr.name:'';
+ let chainMgr=getMgr(currentUser.id);
+ if(!chainMgr && currentUser.role==='l1manager') chainMgr=users.find(u=>u.role==='l2manager');
+ document.getElementById('leaveChain').textContent=chainMgr?'→ Goes to: '+chainMgr.name:(currentUser.role==='l2manager'?'→ Self-recorded (L2 Admin)':'');
  // Month filter dropdowns
  const ctf=document.getElementById('calTeamFilter');
  ctf.innerHTML='<option value="all">All Teams</option>'+getTeams().map(t=>`<option value="${t}">${t} Team</option>`).join('');
@@ -972,6 +1048,7 @@ const PMETA={
  allUsers:{title:'All Employees',sub:'Manage all staff'},
  allRequests:{title:'All Requests',sub:'Complete leave register'},
  reports:{title:'Reports',sub:'Analytics & monthly exports'},
+ leaveLog:{title:'Leave Activity Log',sub:'Full history and audit trail of all leave requests'},
 };
 function sp(name){switchPanel(name);}
 function switchPanel(name){
@@ -995,10 +1072,72 @@ function switchPanel(name){
  if(name==='allRequests')renderAllRequests();
  if(name==='reports')renderReports();
  if(name==='profile')renderProfile();
+ if(name==='leaveLog')renderLeaveLog();
  // responsive: stack apply leave on mobile
  const alw=document.getElementById('applyLeaveWrap');
  if(alw&&window.innerWidth<600)alw.style.gridTemplateColumns='1fr';
  else if(alw)alw.style.gridTemplateColumns='1fr 1fr';
+}
+
+
+// ═══════════ LEAVE LOG ═══════════
+function renderLeaveLog(){
+ const statusF = document.getElementById('logStatusFilter')?.value||'all';
+ const userF   = document.getElementById('logUserFilter')?.value||'mine';
+
+ // Populate user filter (managers see their team; L2 sees all)
+ const ulf = document.getElementById('logUserFilter');
+ if(ulf){
+  let pool=[];
+  if(currentUser.role==='l2manager') pool=users.filter(u=>u.role!=='l2manager');
+  else if(currentUser.role==='l1manager') pool=users.filter(u=>u.manager===currentUser.id);
+  if(pool.length && ulf.options.length<=1){
+   pool.forEach(u=>{
+    const opt=document.createElement('option');
+    opt.value=u.id;opt.textContent=u.name+' ('+u.id+')';ulf.appendChild(opt);
+   });
+  }
+ }
+
+ // Filter requests
+ let data=[...requests];
+ if(userF==='mine') data=data.filter(r=>r.userId===currentUser.id);
+ else data=data.filter(r=>r.userId===userF);
+ if(statusF!=='all') data=data.filter(r=>r.status===statusF);
+ data.sort((a,b)=>b.from>a.from?1:-1);
+
+ const tb=document.getElementById('leaveLogBody');
+ if(!data.length){
+  tb.innerHTML=`<tr><td colspan="10" class="emptyState"><span class="ei">&#128196;</span>No records found.</td></tr>`;
+  return;
+ }
+
+ const statusColor={
+  pending:'var(--amber)',approved:'var(--green)',rejected:'var(--red)',
+  cancelled:'var(--slate)',cancellation_requested:'var(--amber)',
+  withdrawn:'var(--slate)',lwp:'var(--red)'
+ };
+
+ tb.innerHTML=data.map(r=>{
+  const u=getUser(r.userId);
+  const lastLog=r.logs&&r.logs.length?r.logs[r.logs.length-1]:null;
+  const fmtTs=ts=>{try{return new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return ts;}};
+  return`<tr>
+   <td style="font-size:10px;color:var(--slate);font-family:var(--font-mono)">${r.id}</td>
+   <td><div style="display:flex;align-items:center;gap:5px">
+    <div style="width:20px;height:20px;border-radius:50%;background:${u?.color||'#888'};color:#fff;font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${ini(u?.name||'?')}</div>
+    <span style="font-size:11.5px;font-weight:600">${u?.name||r.userId}</span>
+   </div></td>
+   <td><b>${r.type}</b><br><span style="font-size:9.5px;background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};padding:1px 5px;border-radius:20px;font-weight:700">${r.type==='WFH'?'WFH':(r.planned?'Planned':'Unplanned')}</span></td>
+   <td style="font-size:11.5px">${fmtDate(r.from)}</td>
+   <td style="font-size:11.5px">${fmtDate(r.to)}</td>
+   <td style="font-weight:600">${r.days}</td>
+   <td><span class="sBadge" style="background:${statusColor[r.status]||'var(--sl)'};color:#fff;opacity:.9">${r.status.replace(/_/g,' ')}</span></td>
+   <td style="font-size:11px;color:var(--slate);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.remarks||r.cancellationRemarks||r.reason||''}">${r.remarks||r.cancellationRemarks||r.reason||'--'}</td>
+   <td style="font-size:10.5px;color:var(--slate)">${lastLog?`<div style="font-weight:500">${lastLog.byName}</div><div style="font-size:9.5px">${fmtTs(lastLog.ts)}</div>`:'--'}</td>
+   <td><button class="cancelBtn" style="white-space:nowrap;font-size:10px" onclick="viewLogs('${r.id}')">&#128196; View Log</button></td>
+  </tr>`;
+ }).join('');
 }
 
 // ═══════════ DASHBOARD ═══════════
@@ -1129,8 +1268,16 @@ function submitLeave(){
  if(!from||!to){eEl.textContent='Please select dates.';eEl.style.display='block';return;}
  if(from>to){eEl.textContent='End date must be on or after start date.';eEl.style.display='block';return;}
  if(!reason){eEl.textContent='Please enter a reason.';eEl.style.display='block';return;}
- const mgr=getMgr(currentUser.id);
- if(!mgr&&currentUser.role!=='l2manager'){eEl.textContent='No manager assigned. Contact HR.';eEl.style.display='block';return;}
+  // Determine approver chain: employees→L1, L1→L2, L2→self-pending
+ let mgr = null;
+ if(currentUser.role==='employee'){
+  mgr = getMgr(currentUser.id);
+  if(!mgr){ eEl.textContent='No manager assigned. Contact your L2 Admin.'; eEl.style.display='block'; return; }
+ } else if(currentUser.role==='l1manager'){
+  mgr = users.find(u=>u.role==='l2manager');
+  if(!mgr){ eEl.textContent='No L2 Admin found. Contact HR.'; eEl.style.display='block'; return; }
+ }
+ // l2manager: mgr stays null — self-pending
 
  // Auto-detect planned vs unplanned: if leave starts within 7 days → unplanned
  let planned = (type==='PL');
@@ -1142,8 +1289,13 @@ function submitLeave(){
   if(diffDays<7){planned=false;autoDowngraded=true;}
  }
 
- requests.push({id:genId(),userId:currentUser.id,type,planned,from,to,session,
-  days:daysBetween(from,to),reason,status:'pending',markedBy:null,approvedBy:null});
+ const newReq={id:genId(),userId:currentUser.id,type,planned,from,to,session,
+  days:daysBetween(from,to),reason,status:'pending',markedBy:null,approvedBy:null,
+  remarks:'',
+  logs:[{ts:new Date().toISOString(),action:'submitted',by:currentUser.id,byName:currentUser.name,note:'Leave applied'}]
+ };
+ addLog(newReq,'submitted',currentUser.name,'Submitted by '+currentUser.name+' as '+(newReq.planned?'Planned':'Unplanned')+' ('+newReq.type+')');
+ requests.push(newReq);
  saveData();
 
  if(autoDowngraded){
@@ -1175,16 +1327,30 @@ function renderMyRequests(filter){
    <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason}">${r.reason}</td>
    <td>${statusBadge(r.status)}</td>
    <td style="font-size:10.5px;color:var(--slate)">${ab}</td>
-   <td>${r.status==='pending'?`<button class="cancelBtn" onclick="cancelReq('${r.id}')">Cancel</button>`:'--'}</td>
+   <td>
+    ${r.status==='pending'?`<button class="cancelBtn" onclick="cancelReq('${r.id}')">&#8617; Withdraw</button>`:
+     r.status==='approved'?`<button class="cancelBtn" style="background:var(--rl);color:#991B1B" onclick="cancelReq('${r.id}')">&#10005; Cancel</button>`:
+     r.status==='cancellation_requested'?`<span style="font-size:10px;color:var(--amber);font-weight:600">&#9203; Cancellation Pending</span>`:
+     '--'}
+    ${(r.logs&&r.logs.length)?`<button class="cancelBtn" style="margin-top:3px;background:var(--sl);color:var(--slate)" onclick="viewLogs('${r.id}')">&#128196; Log</button>`:''}
+   </td>
   </tr>`;
  }).join('');
 }
 
 function cancelReq(rid){
- if(!confirm('Cancel this request?'))return;
- const r=requests.find(r=>r.id===rid);
- if(r&&r.status==='pending'){r.status='rejected';r.approvedBy=currentUser.id;}
- saveData();renderMyRequests('all');updatePendingBadge();showToast('Cancelled.','warning');
+ const r=requests.find(r=>r.id===rid);if(!r)return;
+ if(r.status==='pending'){
+  // Pending → directly withdraw (no remarks needed)
+  if(!confirm('Withdraw this pending request?'))return;
+  addLog(r,'withdrawn',currentUser.name,'Withdrawn by employee');
+  r.status='withdrawn';r.remarks='Withdrawn by employee';
+  saveData();renderMyRequests('all');updatePendingBadge();
+  showToast('Request withdrawn.','warning');
+ } else if(r.status==='approved'){
+  // Approved → open cancel remarks modal
+  openRemarksModal(rid,'cancel_request');
+ }
 }
 
 // ═══════════ APPROVALS ═══════════
@@ -1212,20 +1378,33 @@ function renderApprovals(){
     ${r.type!=='WFH'?`<button onclick="togglePlanned('${r.id}')" style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};width:100%;text-align:left" title="Click to toggle">
       ${r.planned?'&#9989; Planned':'&#128203; Unplanned'} <span style="font-size:9px;opacity:.7">(click to change)</span>
     </button>`:''}
-    ${r.status==='pending'?`<div style="display:flex;gap:4px">
+    ${r.status==='pending'?`<div style="display:flex;gap:4px;flex-wrap:wrap">
      <button class="appBtn" onclick="actReq('${r.id}','approved')">&#10003; Approve</button>
-     <button class="rejBtn" onclick="actReq('${r.id}','rejected')">&#10005;</button>
+     <button class="rejBtn" onclick="actReq('${r.id}','rejected')">&#10005; Reject</button>
+    </div>`:
+    r.status==='cancellation_requested'?`<div style="display:flex;flex-direction:column;gap:4px">
+     <div style="font-size:9.5px;color:var(--amber);font-weight:600;margin-bottom:2px">&#9997; Cancellation requested</div>
+     <div style="font-size:9.5px;color:var(--slate);margin-bottom:4px">${r.cancellationRemarks||''}</div>
+     <div style="display:flex;gap:4px">
+      <button class="appBtn" onclick="openRemarksModal('${r.id}','approve_cancel')">&#10003; Allow</button>
+      <button class="rejBtn" onclick="openRemarksModal('${r.id}','reject_cancel')">&#10005; Deny</button>
+     </div>
     </div>`:'--'}
+    ${(r.logs&&r.logs.length)?`<button class="cancelBtn" style="margin-top:4px;font-size:10px" onclick="viewLogs('${r.id}')">&#128196; View Log</button>`:''}
    </div></td>
   </tr>`;
  }).join('');
 }
 
 function actReq(rid,action){
+ if(action==='rejected'){
+  openRemarksModal(rid,'reject_l1');return;
+ }
  const r=requests.find(r=>r.id===rid);if(!r)return;
- r.status=action;r.approvedBy=currentUser.id;
+ addLog(r,'approved',currentUser.name,'Approved by '+currentUser.name);
+ r.status='approved';r.approvedBy=currentUser.id;r.remarks='';
  saveData();updatePendingBadge();renderApprovals();
- showToast('Request '+action+'!',action==='approved'?'success':'error');
+ showToast('Request approved!','success');
 }
 function togglePlanned(rid){
  const r=requests.find(r=>r.id===rid);
@@ -1247,6 +1426,131 @@ function togglePlanned(rid){
 
 
 // ═══════════ TEAM VIEW ═══════════
+
+// ── Audit log helper ──
+function addLog(r,action,byName,note){
+ if(!r.logs)r.logs=[];
+ r.logs.push({ts:new Date().toISOString(),action,by:currentUser.id,byName,note});
+}
+
+// ── Remarks modal ──
+let _remarksRid=null,_remarksAction=null;
+function openRemarksModal(rid,action){
+ _remarksRid=rid;_remarksAction=action;
+ const r=requests.find(r=>r.id===rid);
+ const u=getUser(r?.userId);
+ const titleEl=document.getElementById('remarksModalTitle');
+ const descEl=document.getElementById('remarksModalDesc');
+ const btnEl=document.getElementById('remarksConfirmBtn');
+ const errEl=document.getElementById('remarksErr');
+ if(errEl)errEl.style.display='none';
+ document.getElementById('remarksText').value='';
+ if(action==='reject_l1'||action==='reject_l2'){
+  titleEl.textContent='&#10060; Reject Leave Request';
+  descEl.textContent='You are rejecting leave for '+(u?.name||'employee')+' ('+r?.from+' to '+r?.to+'). Please provide a reason.';
+  btnEl.textContent='Reject Request';btnEl.className='dangerBtn';
+ } else if(action==='cancel_request'){
+  titleEl.textContent='&#128683; Request Cancellation';
+  descEl.textContent='You are requesting cancellation of your approved leave ('+r?.from+' to '+r?.to+'). Please provide a reason.';
+  btnEl.textContent='Submit Cancellation';btnEl.className='dangerBtn';
+ } else if(action==='approve_cancel'){
+  titleEl.textContent='&#9989; Approve Cancellation';
+  descEl.textContent='Approve cancellation request from '+(u?.name||'employee')+' for leave ('+r?.from+' to '+r?.to+').';
+  btnEl.textContent='Approve Cancellation';btnEl.className='appBtn';
+ } else if(action==='reject_cancel'){
+  titleEl.textContent='&#10060; Reject Cancellation';
+  descEl.textContent='Reject cancellation request from '+(u?.name||'employee')+' for leave ('+r?.from+' to '+r?.to+').';
+  btnEl.textContent='Reject Cancellation';btnEl.className='dangerBtn';
+ }
+ openModal('remarksModal');
+}
+
+function processRemarks(){
+ const remarks=document.getElementById('remarksText').value.trim();
+ const errEl=document.getElementById('remarksErr');
+ if(!remarks){errEl.textContent='Remarks are mandatory. Please enter a reason.';errEl.style.display='block';return;}
+ errEl.style.display='none';
+ const r=requests.find(r=>r.id===_remarksRid);if(!r)return;
+ if(_remarksAction==='reject_l1'||_remarksAction==='reject_l2'){
+  addLog(r,'rejected',currentUser.name,'Rejected: '+remarks);
+  r.status='rejected';r.approvedBy=currentUser.id;r.remarks=remarks;
+  saveData();updatePendingBadge();
+  closeModal('remarksModal');
+  if(_remarksAction==='reject_l1')renderApprovals();
+  else renderAllRequests();
+  showToast('Request rejected.','error');
+ } else if(_remarksAction==='cancel_request'){
+  // Employee requests cancellation of approved leave
+  addLog(r,'cancellation_requested',currentUser.name,'Cancellation requested: '+remarks);
+  r.cancellationRemarks=remarks;
+  r.status='cancellation_requested';
+  saveData();updatePendingBadge();
+  closeModal('remarksModal');
+  renderMyRequests('all');
+  showToast('Cancellation request sent to manager.','warning');
+ } else if(_remarksAction==='approve_cancel'){
+  addLog(r,'cancelled',currentUser.name,'Cancellation approved: '+remarks);
+  r.status='cancelled';r.approvedBy=currentUser.id;r.remarks=remarks;
+  saveData();updatePendingBadge();
+  closeModal('remarksModal');
+  renderApprovals();renderAllRequests&&renderAllRequests();
+  showToast('Leave cancellation approved.','success');
+ } else if(_remarksAction==='reject_cancel'){
+  addLog(r,'cancellation_rejected',currentUser.name,'Cancellation rejected: '+remarks);
+  r.status='approved';// Revert to approved
+  r.cancellationRejectRemarks=remarks;
+  saveData();updatePendingBadge();
+  closeModal('remarksModal');
+  renderApprovals();
+  showToast('Cancellation rejected — leave remains approved.','warning');
+ }
+ _remarksRid=null;_remarksAction=null;
+}
+
+// ── View Logs ──
+function viewLogs(rid){
+ const r=requests.find(r=>r.id===rid);if(!r)return;
+ const u=getUser(r.userId);
+ const logs=r.logs||[];
+ const fmtTs=ts=>{try{return new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return ts;}};
+ const actionLabel={
+  submitted:'&#128196; Submitted',approved:'&#9989; Approved',rejected:'&#10060; Rejected',
+  withdrawn:'&#8617; Withdrawn',lwp_marked:'&#128683; LWP Marked',
+  cancellation_requested:'&#9997; Cancellation Requested',cancelled:'&#10004; Cancelled',
+  cancellation_rejected:'&#10060; Cancellation Rejected',toggled_planned:'&#128260; Plan Type Changed',
+ };
+ let html=`<div style="padding:0">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+   <div style="width:36px;height:36px;border-radius:50%;background:${u?.color||'#888'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${ini(u?.name||'?')}</div>
+   <div><div style="font-weight:700;font-size:14px">${u?.name||r.userId}</div>
+   <div style="font-size:11px;color:var(--slate)">${r.type} &bull; ${r.from}${r.from!==r.to?' to '+r.to:''} &bull; ${r.days} day${r.days>1?'s':''}</div></div>
+  </div>
+  ${r.remarks?`<div style="background:var(--rl);color:#991B1B;padding:9px 12px;border-radius:8px;font-size:12px;margin-bottom:12px"><b>Manager Remarks:</b> ${r.remarks}</div>`:''}
+  ${r.cancellationRemarks?`<div style="background:var(--al);color:#92400E;padding:9px 12px;border-radius:8px;font-size:12px;margin-bottom:12px"><b>Cancellation Reason:</b> ${r.cancellationRemarks}</div>`:''}
+  <div style="font-size:11px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Audit Trail</div>`;
+ if(!logs.length){html+='<div style="font-size:12px;color:var(--slate);padding:8px 0">No log entries yet.</div>';}
+ else{
+  logs.forEach((l,i)=>{
+   html+=`<div style="display:flex;gap:10px;margin-bottom:10px;position:relative">
+    <div style="display:flex;flex-direction:column;align-items:center">
+     <div style="width:28px;height:28px;border-radius:50%;background:${i===logs.length-1?'var(--teal)':'var(--sl)'};border:2px solid ${i===logs.length-1?'var(--teal)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${i===logs.length-1?'&#9679;':'&#9675;'}</div>
+     ${i<logs.length-1?'<div style="width:2px;flex:1;background:var(--border);margin:3px 0"></div>':''}
+    </div>
+    <div style="flex:1;padding-bottom:10px">
+     <div style="font-size:12px;font-weight:600">${actionLabel[l.action]||l.action}</div>
+     <div style="font-size:11px;color:var(--slate);margin-top:1px">${l.byName||l.by} &bull; ${fmtTs(l.ts)}</div>
+     ${l.note?`<div style="font-size:11px;color:var(--text);margin-top:3px;background:var(--sl);padding:4px 8px;border-radius:6px">${l.note}</div>`:''}
+    </div>
+   </div>`;
+  });
+ }
+ html+='</div>';
+ // Show in a modal
+ document.getElementById('logsModalTitle').textContent='Leave History — '+r.id;
+ document.getElementById('logsModalBody').innerHTML=html;
+ openModal('logsModal');
+}
+
 function renderTeamView(){
  const reps=getReportees(currentUser.id).map(id=>getUser(id)).filter(Boolean);
  const g=document.getElementById('teamGrid');
@@ -1412,8 +1716,18 @@ function openAddUserModal(){
 }
 function toggleMgrField(){
  const role=document.getElementById('nuRole').value;
- // L1 and L2 managers don't report to an L1 manager
- document.getElementById('mgrFieldWrap').style.display=(role==='l1manager'||role==='l2manager')?'none':'block';
+ const wrap=document.getElementById('mgrFieldWrap');
+ const hint=document.getElementById('mgrHint');
+ if(role==='employee'){
+  wrap.style.display='block';
+  if(hint)hint.style.display='none';
+ } else if(role==='l1manager'){
+  wrap.style.display='none';
+  if(hint){hint.textContent='L1 Managers automatically report to the L2 Admin.';hint.style.display='block';}
+ } else if(role==='l2manager'){
+  wrap.style.display='none';
+  if(hint){hint.textContent='L2 Admin has no reporting manager.';hint.style.display='block';}
+ }
 }
 function addUser(){
  const name=document.getElementById('nuName').value.trim();
@@ -1452,9 +1766,12 @@ function submitLWP(){
  eEl.style.display='none';sEl.style.display='none';
  if(!uid||!from||!to){eEl.textContent='Fill all fields.';eEl.style.display='block';return;}
  if(from>to){eEl.textContent='Invalid date range.';eEl.style.display='block';return;}
- requests.push({id:genId(),userId:uid,type:'LWP',planned:false,from,to,session:'full',days:daysBetween(from,to),
-  reason:remark||'Uninformed absence',status:'lwp',markedBy:currentUser.id,
-  approvedBy:currentUser.role==='l2manager'?currentUser.id:null});
+ requests.push({id:genId(),userId:uid,type:'LWP',planned:false,from,to,session:'full',
+  days:daysBetween(from,to),reason:remark||'Uninformed absence',status:'lwp',
+  markedBy:currentUser.id,approvedBy:currentUser.role==='l2manager'?currentUser.id:null,
+  remarks:'Marked as LWP by '+currentUser.name,
+  logs:[{ts:new Date().toISOString(),action:'lwp_marked',by:currentUser.id,byName:currentUser.name,note:'LWP marked by '+currentUser.name}]
+ });
  saveData();sEl.style.display='block';document.getElementById('lwpRemark').value='';
  updatePendingBadge();showToast('LWP marked for '+(getUser(uid)?.name||uid),'warning');
 }
@@ -1486,19 +1803,31 @@ function renderAllRequests(){
     ${r.type!=='WFH'?`<button onclick="togglePlanned('${r.id}')" style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:${r.planned?'var(--gl)':'var(--bl)'};color:${r.planned?'#065F46':'#1E40AF'};width:100%;text-align:left">
       ${r.planned?'&#9989; Planned':'&#128203; Unplanned'} <span style='font-size:9px;opacity:.7'>(click to change)</span>
      </button>`:''}
-    ${r.status==='pending'?`<div style="display:flex;gap:4px">
+    ${r.status==='pending'?`<div style="display:flex;gap:4px;flex-wrap:wrap">
      <button class="appBtn" onclick="actReqL2('${r.id}','approved')">&#10003; Approve</button>
-     <button class="rejBtn" onclick="actReqL2('${r.id}','rejected')">&#10005;</button>
+     <button class="rejBtn" onclick="actReqL2('${r.id}','rejected')">&#10005; Reject</button>
+    </div>`:
+    r.status==='cancellation_requested'?`<div style="display:flex;flex-direction:column;gap:4px">
+     <div style="font-size:9.5px;color:var(--amber);font-weight:600;margin-bottom:2px">&#9997; Cancellation requested</div>
+     <div style="display:flex;gap:4px">
+      <button class="appBtn" onclick="openRemarksModal('${r.id}','approve_cancel')">&#10003; Allow</button>
+      <button class="rejBtn" onclick="openRemarksModal('${r.id}','reject_cancel')">&#10005; Deny</button>
+     </div>
     </div>`:'--'}
+    ${(r.logs&&r.logs.length)?`<button class="cancelBtn" style="margin-top:4px;font-size:10px" onclick="viewLogs('${r.id}')">&#128196; Log</button>`:''}
    </div></td>
   </tr>`;
  }).join('');
 }
 function actReqL2(rid,action){
+ if(action==='rejected'){
+  openRemarksModal(rid,'reject_l2');return;
+ }
  const r=requests.find(r=>r.id===rid);if(!r)return;
- r.status=action;r.approvedBy=currentUser.id;
+ addLog(r,'approved',currentUser.name,'Approved by '+currentUser.name);
+ r.status='approved';r.approvedBy=currentUser.id;r.remarks='';
  saveData();updatePendingBadge();renderAllRequests();
- showToast('Request '+action+'!',action==='approved'?'success':'error');
+ showToast('Request approved!','success');
 }
 
 // ═══════════ REPORTS (L2) ═══════════
